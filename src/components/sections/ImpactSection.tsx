@@ -66,8 +66,8 @@ export const ImpactSection: React.FC = () => {
             <div className="aspect-[4/5] w-full overflow-hidden border border-alabaster/[0.1] bg-obsidian">
               <img
                 src="/portrait.png"
-                width={580}
-                height={725}
+                width={837}
+                height={1024}
                 alt="Md. Abrar Hossain — Business Relationship Manager & Project Leader at CompileQ"
                 className="h-full w-full object-cover object-top grayscale-[22%] contrast-[1.03] transition-all duration-700 hover:grayscale-0"
               />
