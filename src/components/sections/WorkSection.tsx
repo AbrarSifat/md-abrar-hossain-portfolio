@@ -277,10 +277,10 @@ export const WorkSection: React.FC = () => {
 
                       <div>
                         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-ink-subtle">
-                          Commercial Structure
+                          Execution &amp; Governance Model
                         </span>
                         <p className="mt-2 text-sm font-normal text-sand-light">
-                          {acc.commercialModel}
+                          {acc.governanceModel}
                         </p>
                       </div>
                     </div>

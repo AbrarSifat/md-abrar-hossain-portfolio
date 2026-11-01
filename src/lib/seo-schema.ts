@@ -74,7 +74,9 @@ export function getPortfolioJsonLd() {
         knowsAbout: [
           ...SKILL_CLUSTERS.leadership,
           ...SKILL_CLUSTERS.techStack,
-          'B2B SaaS Commercial Structuring',
+          'Agile, Iterative & Waterfall Delivery Methodologies',
+          'Cross-Cultural Stakeholder Communication',
+          'QA Oversight, Brand Guidance & Ideation Leadership',
           'UK Hospitality EPOS & KDS Automation',
         ],
         hasCredential: VERIFIED_CREDENTIALS.map((cred) => ({

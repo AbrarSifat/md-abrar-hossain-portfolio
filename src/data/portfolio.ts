@@ -25,7 +25,7 @@ export interface CorridorAccount {
   name: string;
   location: string;
   sector: string;
-  commercialModel: string;
+  governanceModel: string;
   ecosystem: string[];
   summary: string;
 }
@@ -88,50 +88,50 @@ export const CORRIDOR_ACCOUNTS: CorridorAccount[] = [
     name: 'La Mia Mamma Ltd.',
     location: '247A Kings Road, Chelsea, London SW3',
     sector: 'Flagship Italian Dining Group',
-    commercialModel: '£2,802 Upfront Rollout + £117/mo SaaS Retainer',
+    governanceModel: 'Hybrid Agile-Waterfall · Dual-Stage QA & Brand Validation',
     ecosystem: ['Automation360°', '15" C-KIOSK', 'Cibo m-POS', 'KDS', 'DOJO Payments', 'StockTake-Online'],
     summary:
-      'Architected end-to-end commercial service quoting and multi-device EPOS/KDS automation rollout for Chelsea flagship venue.',
+      'Orchestrated cross-cultural alignment between London executives and offshore engineering. Governed hardware logistics with Waterfall milestones while running Agile software sprints, brand identity reviews, and rigorous QA acceptance testing.',
   },
   {
     id: 'primitivo',
     name: 'Primitivo London',
     location: '42 Cranbourn St, Leicester Square, London',
     sector: 'West End Hospitality',
-    commercialModel: '£1,395 Onboarding + £97/mo Recurring SLA',
+    governanceModel: 'Iterative Sprints · Collaborative Ideation & Live Menu QA',
     ecosystem: ['Web & Brand Ecosystem', 'EPOS Integration', 'SLA Support', 'Digital Menus'],
     summary:
-      'Delivered commercial scoping, digital presence, and ongoing monthly service-level retention in central West End corridor.',
+      'Facilitated brainstorming and creative ideation workshops with venue leadership. Managed rapid iterative design cycles, multi-device QA checks, and proactive communication across London and GMT+6 time zones.',
   },
   {
     id: 'little-italy',
     name: 'Little Italy Soho',
     location: '6-8 Irving St, Soho, London',
     sector: 'Iconic Soho Restaurant',
-    commercialModel: '£1,395 Initial + £97/mo Managed Ecosystem',
+    governanceModel: 'Waterfall Infrastructure Gating · Agile Digital Rollout',
     ecosystem: ['Hostinger Cloud', 'DNS Architecture', 'WordPress', 'Automation360°'],
     summary:
-      'Managed custom domain/DNS infrastructure (littleitalydine.uk), digital dining touchpoints, and recurring B2B relationship.',
+      'Governed zero-downtime DNS and cloud architecture migration with phased Waterfall gating, coupled with Agile iterations for customer-facing digital touchpoints and brand voice alignment.',
   },
   {
     id: 'little-sicily',
     name: 'Little Sicily Westminster',
     location: 'London SW1A 2DD',
     sector: 'Central London Dining',
-    commercialModel: '£396 Rapid Deployment + £97/mo Retainer',
+    governanceModel: 'Agile Sprint Velocity · Fast-Track QA & Operational Onboarding',
     ecosystem: ['Rapid Onboarding', 'Digital Ordering', 'Client Retention SLA'],
     summary:
-      'Executed low-friction rapid onboarding model converting initial deployment into sticky monthly recurring SaaS revenue.',
+      'Accelerated deployment timelines through daily standups, cross-cultural team synchronization, and rigorous hands-on QA testing to ensure seamless operational adoption without venue disruption.',
   },
   {
     id: 'qamla',
     name: 'Qamla Ltd (UK)',
     location: 'Unit-B15, 129 Mile End Rd, London E1 4BG',
     sector: 'UK Hospitality & Recruitment Platform',
-    commercialModel: 'Internal Operations & Brand Infrastructure',
+    governanceModel: 'Cross-Border Governance · Process Architecture & SLA Oversight',
     ecosystem: ['Process Architecture', 'Corporate Governance', 'Google Workspace', 'Stakeholder Ops'],
     summary:
-      'Streamlined cross-border scheduling, documentation, and executive communications by +30% across London & Bangladesh teams.',
+      'Streamlined cross-border executive communications and operational workflows across London and Bangladesh hubs by +30%, enforcing structured documentation and transparent team accountability.',
   },
 ];
 
@@ -140,7 +140,7 @@ export const CASE_STUDIES: CaseStudy[] = [
     id: 'automation-360',
     index: '01',
     title: 'Automation360° UK Hospitality Rollout',
-    subtitle: 'B2B Commercial Structuring, EPOS/KDS Deployment & Recurring Retainer Growth',
+    subtitle: 'Agile & Waterfall Delivery, Cross-Cultural Liaison & QA Governance',
     client: 'CompileQ · London Hospitality Portfolio',
     location: 'London, UK (SW3 · WC2 · SW1A)',
     year: '2023 — Present',
@@ -149,26 +149,26 @@ export const CASE_STUDIES: CaseStudy[] = [
     headlineMetricLabel: 'Client Satisfaction & Retention',
     secondaryMetrics: [
       { value: '4+', label: 'Central London Venues' },
-      { value: '£2.8K+', label: 'Flagship Deal Structuring' },
+      { value: '100%', label: 'Milestone Delivery Standard' },
       { value: '+25%', label: 'Team Retention Uplift' },
     ],
     accentColor: '#E5C77B',
     challenge:
       'High-volume London restaurants faced fragmented point-of-sale hardware, manual stocktaking, DNS/web downtime, and disconnected vendor support across time zones.',
     strategy:
-      'Unified hardware, software, web hosting, and recurring SLA support into CompileQ’s "Automation360°" commercial framework—pairing transparent upfront CAPEX quoting with predictable monthly OPEX retainers.',
+      'Orchestrated cross-functional engineering, design, and hospitality leadership across time zones—blending Waterfall milestone gating for hardware procurement with Agile sprint iterations for software, hands-on QA verification, and brand guidance.',
     architectureFlow: [
-      'Discovery & Commercial Quoting (La Mia Mamma, Primitivo, Little Italy, Little Sicily)',
+      'Cross-Cultural Discovery & Stakeholder Alignment (La Mia Mamma, Primitivo, Little Italy, Little Sicily)',
       'Cloud & DNS Provisioning (Hostinger Cloud Professional + Custom UK Domains)',
-      'Hardware/SaaS Integration (C-KIOSK, Cibo m-POS, KDS, DOJO T+3, StockTake-Online)',
-      'Executive Account Governance & Proactive SLA Retention Reviews',
+      'Multi-Disciplinary Team Leadership (Agile Sprints, Ideation Workshops & QA Sign-Offs)',
+      'Executive Account Governance & Proactive Operational Reviews',
     ],
     outcomes: [
-      'Achieved a 50% increase in customer satisfaction and multi-quarter B2B retention.',
-      'Converted one-off web/IT engagements into predictable £97–£117/mo recurring retainers.',
-      'Strengthened internal delivery morale, contributing to a 25% improvement in HR retention.',
+      'Achieved a 50% increase in customer satisfaction and multi-quarter B2B client retention.',
+      'Established rigorous QA testing protocols and brand identity standards, eliminating post-rollout regressions.',
+      'Strengthened internal team morale and cross-border collaboration, driving a 25% improvement in HR retention.',
     ],
-    stack: ['Stakeholder Management', 'Commercial Quoting', 'Hostinger Ecosystem', 'WordPress', 'ClickUp', 'Jira'],
+    stack: ['Agile & Waterfall Methods', 'Cross-Cultural Communication', 'QA Testing & Oversight', 'Brand Guidance & Ideation', 'ClickUp & Jira', 'Stakeholder Leadership'],
   },
   {
     id: 'agile-velocity',
