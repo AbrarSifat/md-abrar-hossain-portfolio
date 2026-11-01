@@ -1,9 +1,8 @@
 'use client';
 
 import React from 'react';
-import { AnimatePresence, motion, useScroll, useSpring } from 'framer-motion';
-import { Moon, Sun } from 'lucide-react';
-import { useTheme } from '@/components/ThemeProvider';
+import { motion, useScroll, useSpring } from 'framer-motion';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface NavbarProps {
   onOpenAiBrief: () => void;
@@ -21,7 +20,6 @@ const NAV_ITEMS = [
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 220, damping: 32, restDelta: 0.001 });
-  const { theme, toggleTheme } = useTheme();
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
@@ -64,40 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
               ))}
             </div>
 
-            <button
-              type="button"
-              onClick={toggleTheme}
-              data-cursor="THEME"
-              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-              title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              className="inline-flex h-7 w-7 items-center justify-center border border-alabaster/[0.14] text-ink-secondary transition-colors duration-300 hover:border-alabaster/50 hover:text-alabaster focus:outline-none"
-            >
-              <AnimatePresence mode="wait" initial={false}>
-                {theme === 'dark' ? (
-                  <motion.span
-                    key="sun"
-                    initial={{ opacity: 0, rotate: -45, scale: 0.75 }}
-                    animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                    exit={{ opacity: 0, rotate: 45, scale: 0.75 }}
-                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex items-center justify-center"
-                  >
-                    <Sun className="h-[13px] w-[13px]" strokeWidth={1.5} />
-                  </motion.span>
-                ) : (
-                  <motion.span
-                    key="moon"
-                    initial={{ opacity: 0, rotate: 45, scale: 0.75 }}
-                    animate={{ opacity: 1, rotate: 0, scale: 1 }}
-                    exit={{ opacity: 0, rotate: -45, scale: 0.75 }}
-                    transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex items-center justify-center"
-                  >
-                    <Moon className="h-[13px] w-[13px]" strokeWidth={1.5} />
-                  </motion.span>
-                )}
-              </AnimatePresence>
-            </button>
+            <ThemeToggle />
 
             <button
               type="button"
