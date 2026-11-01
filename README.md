@@ -1,6 +1,9 @@
 # Md. Abrar Hossain — Next.js 15 Awwwards Minimalist Portfolio (v3.1)
 
-**Live Production:** https://md-abrar-hossain.vercel.app/
+**Live Production:**  
+* Primary: https://abrarhossain.vercel.app/  
+* Alternate: https://mdabrarhossain.vercel.app/  
+* Direct: https://md-abrar-hossain.vercel.app/
 
 ## Commands
 ```bash
