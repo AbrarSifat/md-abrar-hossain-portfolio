@@ -483,7 +483,7 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
 
   return (
     <div
-      className="relative h-full w-full cursor-grab active:cursor-grabbing select-none"
+      className="relative h-full w-full cursor-grab active:cursor-grabbing select-none touch-pan-y"
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       data-cursor="BEAM"

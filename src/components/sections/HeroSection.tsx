@@ -33,7 +33,7 @@ export const HeroSection: React.FC = () => {
       />
 
       {/* Main Asymmetric Stage */}
-      <div className="relative z-10 mx-auto grid w-full max-w-[1360px] flex-1 grid-cols-1 items-center gap-12 px-6 py-12 lg:grid-cols-12 lg:gap-8 lg:px-12">
+      <div className="relative z-10 mx-auto grid w-full max-w-[1360px] flex-1 grid-cols-1 items-center gap-10 px-4 py-8 sm:gap-12 sm:px-6 sm:py-12 lg:grid-cols-12 lg:gap-8 lg:px-12">
         {/* Left Editorial Typography */}
         <div className="relative z-20 lg:col-span-7">
           <motion.p
@@ -49,7 +49,7 @@ export const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.24, ease: [0.16, 1, 0.3, 1] }}
-            className="mt-6 text-[clamp(2.75rem,5.6vw,5.35rem)] font-light leading-[1.04] tracking-[-0.038em] text-alabaster"
+            className="mt-5 sm:mt-6 text-[clamp(2.25rem,5.6vw,5.35rem)] font-light leading-[1.06] tracking-[-0.038em] text-alabaster"
           >
             Bridging commercial{' '}
             <span className="font-serif italic font-normal text-sand-light">
@@ -62,7 +62,7 @@ export const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.36 }}
-            className="mt-8 max-w-lg text-[15px] font-light leading-[1.75] text-ink-muted sm:text-base"
+            className="mt-6 sm:mt-8 max-w-lg text-[15px] font-light leading-[1.75] text-ink-muted sm:text-base"
           >
             Leading UK B2B client partnerships, Automation360° hospitality ecosystems, and cross-functional delivery across the United Kingdom and Bangladesh for both CompileQ and Qamla.
           </motion.p>
@@ -71,7 +71,7 @@ export const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.46 }}
-            className="mt-10 flex flex-wrap items-center gap-4"
+            className="mt-8 sm:mt-10 flex flex-wrap items-center gap-3 sm:gap-4"
           >
             <Button size="lg" asChild>
               <a
@@ -105,7 +105,7 @@ export const HeroSection: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, delay: 0.3 }}
-          className="relative z-10 h-[440px] w-full sm:h-[520px] lg:col-span-5 lg:h-[620px]"
+          className="relative z-10 h-[340px] w-full sm:h-[480px] lg:col-span-5 lg:h-[620px]"
         >
           <div className="absolute inset-y-0 inset-x-0 lg:-inset-x-12 xl:-inset-x-16">
             <WebGLErrorBoundary>
@@ -117,7 +117,7 @@ export const HeroSection: React.FC = () => {
 
       {/* Minimalist Architectural Ledger Strip */}
       <div className="border-t border-alabaster/[0.08]">
-        <div className="mx-auto grid max-w-[1360px] grid-cols-2 gap-6 px-6 py-6 sm:grid-cols-4 lg:px-12">
+        <div className="mx-auto grid max-w-[1360px] grid-cols-2 gap-4 sm:gap-6 px-4 py-5 sm:px-6 sm:py-6 sm:grid-cols-4 lg:px-12">
           <div>
             <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-ink-subtle">
               Current Role

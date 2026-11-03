@@ -33,7 +33,7 @@ export const WorkSection: React.FC = () => {
       {/* 02 — Selected Works */}
       <section
         id="work"
-        className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-6 py-28 sm:py-36 lg:px-12"
+        className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-4 sm:px-6 py-20 sm:py-28 lg:py-36 lg:px-12"
       >
         <div className="flex flex-col justify-between gap-8 pb-14 lg:flex-row lg:items-end">
           <div>
@@ -326,7 +326,7 @@ export const WorkSection: React.FC = () => {
       {/* 03 — UK Corridor Footprint */}
       <section
         id="corridor"
-        className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-6 py-28 sm:py-36 lg:px-12"
+        className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-4 sm:px-6 py-20 sm:py-28 lg:py-36 lg:px-12"
       >
         <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-4">

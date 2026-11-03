@@ -14,6 +14,8 @@ import { sounds } from '@/lib/sound';
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogDescription,
 } from '@/components/ui/dialog';
 import { MacGeniePreview } from './MacGeniePreview';
 
@@ -21,12 +23,12 @@ export const CredentialsSection: React.FC = () => {
   const [hoveredCred, setHoveredCred] = useState<VerifiedCredential | null>(null);
   const [cursorPos, setCursorPos] = useState<{ x: number; y: number } | null>(null);
   const [rowCenterY, setRowCenterY] = useState<number | null>(null);
-  const [mobilePreviewCred, setMobilePreviewCred] = useState<VerifiedCredential | null>(null);
+  const [selectedCred, setSelectedCred] = useState<VerifiedCredential | null>(null);
 
   return (
     <section
       id="credentials"
-      className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-6 py-28 sm:py-36 lg:px-12"
+      className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-4 sm:px-6 py-20 sm:py-28 lg:py-36 lg:px-12"
     >
       {/* Header */}
       <div className="grid grid-cols-1 gap-8 pb-14 lg:grid-cols-12">
@@ -67,6 +69,10 @@ export const CredentialsSection: React.FC = () => {
           {VERIFIED_CREDENTIALS.map((cred) => (
             <div
               key={cred.id}
+              onClick={() => {
+                sounds.playLensMount();
+                setSelectedCred(cred);
+              }}
               onMouseEnter={(e) => {
                 sounds.playPrismSnap();
                 const rect = e.currentTarget.getBoundingClientRect();
@@ -77,40 +83,32 @@ export const CredentialsSection: React.FC = () => {
               onMouseMove={(e) => {
                 setCursorPos({ x: e.clientX, y: e.clientY });
               }}
-              className="group flex flex-col justify-between gap-4 py-7 transition-opacity duration-500 group-hover/creds:opacity-35 hover:!opacity-100 sm:flex-row sm:items-center relative"
+              className="group flex flex-col justify-between gap-4 py-6 sm:py-7 transition-opacity duration-500 group-hover/creds:opacity-35 hover:!opacity-100 sm:flex-row sm:items-center relative cursor-pointer"
             >
-              <a
-                href={cred.verifyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                data-cursor="VERIFY"
-                onClick={() => sounds.playLeicaShutter()}
-                className="flex-1 focus:outline-none"
-              >
-                <div>
-                  <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-ink-subtle">
-                    {cred.issuer}
-                  </p>
-                  <h4 className="mt-1.5 text-xl font-light tracking-[-0.02em] text-alabaster transition-transform duration-500 group-hover:translate-x-2">
-                    {cred.title}
-                  </h4>
-                  <p className="mt-1.5 text-xs font-light text-ink-subtle">
-                    {cred.skills}
-                  </p>
-                </div>
-              </a>
+              <div className="flex-1 pr-2">
+                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-sand sm:text-ink-subtle">
+                  {cred.issuer}
+                </p>
+                <h4 className="mt-1 text-lg sm:text-xl font-light tracking-[-0.02em] text-alabaster transition-transform duration-500 group-hover:translate-x-2">
+                  {cred.title}
+                </h4>
+                <p className="mt-1 text-xs font-light text-ink-subtle line-clamp-2 sm:line-clamp-none">
+                  {cred.skills}
+                </p>
+              </div>
 
-              <div className="flex items-center gap-4 sm:gap-6 font-mono text-xs text-ink-muted shrink-0">
+              <div className="flex items-center justify-between sm:justify-end gap-3 sm:gap-6 font-mono text-xs text-ink-muted shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-alabaster/[0.06]">
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={(e) => {
+                    e.stopPropagation();
                     sounds.playLensMount();
-                    setMobilePreviewCred(cred);
+                    setSelectedCred(cred);
                   }}
-                  className="sm:hidden flex items-center gap-1 rounded-md border border-alabaster/15 bg-alabaster/5 px-2.5 py-1 text-[11px] text-sand hover:text-alabaster"
+                  className="flex items-center gap-1.5 rounded-full border border-sand/35 bg-sand/10 px-3 py-1 text-[11px] text-sand hover:border-sand hover:bg-sand/20 transition-colors"
                 >
                   <Eye className="h-3 w-3" />
-                  <span>Preview</span>
+                  <span>Inspect</span>
                 </button>
 
                 <div className="text-left sm:text-right">
@@ -123,9 +121,13 @@ export const CredentialsSection: React.FC = () => {
                   target="_blank"
                   rel="noopener noreferrer"
                   data-cursor="VERIFY"
-                  onClick={() => sounds.playLeicaShutter()}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    sounds.playLeicaShutter();
+                  }}
                   className="p-1 hover:text-alabaster focus:outline-none"
-                  aria-label={`Verify ${cred.title}`}
+                  aria-label={`Verify ${cred.title} on ${cred.issuer}`}
+                  title="Verify on official issuer"
                 >
                   <ArrowUpRight className="h-4 w-4 shrink-0 text-ink-subtle transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 group-hover:text-alabaster" />
                 </a>
@@ -135,33 +137,83 @@ export const CredentialsSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Authentic macOS Genie Effect (Anchored Within Content Line & Following Cursor) */}
+      {/* Authentic macOS Genie Effect (Anchored Within Content Line & Following Cursor for Desktop) */}
       <MacGeniePreview
         imageSrc={hoveredCred ? hoveredCred.image : null}
         cursorPos={cursorPos}
         rowCenterY={rowCenterY}
       />
 
-      {/* Mobile Preview Modal */}
+      {/* Complete Certificate Pop-up Inspection Modal (Mobile & Desktop) */}
       <Dialog
-        open={!!mobilePreviewCred}
+        open={!!selectedCred}
         onOpenChange={(open) => {
           if (!open) {
             sounds.playLensUnmount();
-            setMobilePreviewCred(null);
+            setSelectedCred(null);
           }
         }}
       >
-        <DialogContent className="max-w-xl bg-[#141416] border-white/20 p-3 sm:p-4">
-          {mobilePreviewCred && (
-            <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg bg-black/60 shadow-inner">
-              <Image
-                src={mobilePreviewCred.image}
-                alt={mobilePreviewCred.title}
-                fill
-                className="object-contain"
-                sizes="(max-width: 768px) 100vw, 600px"
-              />
+        <DialogContent className="max-w-2xl bg-void/98 border-alabaster/[0.14] p-5 sm:p-7 shadow-2xl backdrop-blur-2xl">
+          {selectedCred && (
+            <div className="space-y-5">
+              {/* Header */}
+              <div className="pr-10">
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-sand font-medium">
+                  {selectedCred.issuer} · Verified Credential
+                </span>
+                <DialogTitle className="mt-1.5 text-xl sm:text-2xl font-light tracking-[-0.02em] text-alabaster">
+                  {selectedCred.title}
+                </DialogTitle>
+                <DialogDescription className="mt-1 font-mono text-xs text-ink-subtle">
+                  ID: <span className="text-sand-light">{selectedCred.credentialId}</span> · Issued {selectedCred.date}
+                </DialogDescription>
+              </div>
+
+              {/* High-Resolution Certificate Visual */}
+              <div className="relative aspect-[4/3] w-full overflow-hidden rounded-lg border border-alabaster/[0.1] bg-black/60 shadow-inner">
+                <Image
+                  src={selectedCred.image}
+                  alt={selectedCred.title}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, 800px"
+                  priority
+                />
+              </div>
+
+              {/* Verified Competencies */}
+              <div className="rounded-md border border-alabaster/[0.08] bg-alabaster/[0.02] p-3 text-xs font-light text-ink-muted">
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-subtle block mb-1">
+                  Validated Competencies
+                </span>
+                {selectedCred.skills}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-alabaster/[0.08]">
+                <a
+                  href={selectedCred.verifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => sounds.playLeicaShutter()}
+                  className="inline-flex items-center justify-center gap-2 rounded-md bg-sand px-4 py-2.5 font-mono text-xs font-medium uppercase tracking-[0.14em] text-obsidian transition-opacity hover:opacity-90"
+                >
+                  <span>Verify on Official Issuer</span>
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </a>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    sounds.playLensUnmount();
+                    setSelectedCred(null);
+                  }}
+                  className="inline-flex items-center justify-center rounded-md border border-alabaster/[0.14] px-4 py-2.5 font-mono text-xs uppercase tracking-[0.14em] text-ink-secondary hover:text-alabaster hover:border-alabaster/40"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           )}
         </DialogContent>

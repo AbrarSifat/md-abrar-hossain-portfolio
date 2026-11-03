@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { Volume1, Volume2, VolumeX } from 'lucide-react';
+import { Volume1, Volume2, VolumeX, X } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { sounds } from '@/lib/sound';
 
@@ -61,6 +61,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
     }
   };
 
+  const handleVolumeButtonClick = () => {
+    if (!isHovered) {
+      setIsHovered(true);
+    } else {
+      sounds.toggle();
+    }
+  };
+
   useEffect(() => {
     return () => {
       if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
@@ -83,19 +91,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
       <header className="no-print fixed inset-x-0 top-0 z-50 border-b border-alabaster/[0.07] bg-void/80 backdrop-blur-xl transition-colors duration-500">
         <nav
           aria-label="Primary Navigation"
-          className="mx-auto flex h-16 max-w-[1360px] items-center justify-between px-6 lg:px-12"
+          className="mx-auto flex h-16 max-w-[1360px] items-center justify-between px-4 sm:px-6 lg:px-12"
         >
           {/* Left Identity — Clean Minimalist Wordmark */}
           <a
             href="#top"
             onClick={(e) => scrollToSection(e, '#top')}
-            className="text-sm font-medium tracking-tight text-alabaster transition-opacity hover:opacity-75"
+            className="text-sm font-medium tracking-tight text-alabaster transition-opacity hover:opacity-75 truncate mr-2"
           >
             Md. Abrar Hossain
           </a>
 
           {/* Right Navigation + Leica Audio + Theme Toggle + Executive Brief */}
-          <div className="flex items-center gap-2.5 sm:gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <div className="hidden md:flex items-center gap-6 mr-1">
               {NAV_ITEMS.map((item) => (
                 <a
@@ -109,7 +117,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
               ))}
             </div>
 
-            {/* Audio Haptics Toggle & Hover Volume Slider */}
+            {/* Audio Haptics Toggle & Responsive Volume Slider */}
             <div
               className="relative"
               onMouseEnter={handleMouseEnter}
@@ -117,7 +125,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
             >
               <button
                 type="button"
-                onClick={() => sounds.toggle()}
+                onClick={handleVolumeButtonClick}
                 className="inline-flex h-7 w-7 items-center justify-center border border-alabaster/[0.14] text-ink-muted transition-colors duration-300 hover:border-alabaster/50 hover:text-alabaster focus:outline-none"
                 aria-label="Toggle Audio System"
               >
@@ -130,17 +138,29 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
                 )}
               </button>
 
-              {/* Floating Volume Slider Popover */}
+              {/* Floating Backdrop for Touch/Mobile dismiss */}
+              <AnimatePresence>
+                {isHovered && (
+                  <div
+                    key="volume-backdrop"
+                    className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[2px] sm:hidden"
+                    onClick={() => setIsHovered(false)}
+                  />
+                )}
+              </AnimatePresence>
+
+              {/* Floating Volume Slider Popover (Centered on mobile, right-anchored on desktop) */}
               <AnimatePresence>
                 {isHovered && (
                   <motion.div
-                    initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                    key="volume-popover"
+                    initial={{ opacity: 0, y: 8, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 4, scale: 0.96 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.95 }}
                     transition={{ duration: 0.18, ease: 'easeOut' }}
-                    className="absolute right-0 top-full mt-2 w-64 rounded-xl border border-alabaster/[0.14] bg-void/95 p-3.5 shadow-2xl backdrop-blur-2xl z-50 text-alabaster select-none"
+                    className="fixed left-4 right-4 top-20 z-50 mx-auto max-w-[320px] rounded-xl border border-alabaster/[0.14] bg-void/98 p-4 shadow-2xl backdrop-blur-2xl text-alabaster select-none sm:absolute sm:left-auto sm:right-0 sm:top-full sm:mt-2 sm:w-64 sm:p-3.5 sm:mx-0"
                   >
-                    {/* Header: Clean Label + Live Level */}
+                    {/* Header: Clean Label + Live Level + Mobile Close */}
                     <div className="flex items-center justify-between pb-2.5 border-b border-alabaster/[0.08]">
                       <div className="flex items-center gap-1.5">
                         <span className="h-1.5 w-1.5 rounded-full bg-sand animate-pulse" />
@@ -148,9 +168,19 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
                           Volume
                         </span>
                       </div>
-                      <span className="font-mono text-[11px] font-semibold text-sand-light tabular-nums">
-                        {soundEnabled ? `${volumePercent}%` : 'MUTED'}
-                      </span>
+                      <div className="flex items-center gap-2.5">
+                        <span className="font-mono text-[11px] font-semibold text-sand-light tabular-nums">
+                          {soundEnabled ? `${volumePercent}%` : 'MUTED'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setIsHovered(false)}
+                          className="sm:hidden text-ink-subtle hover:text-alabaster p-0.5"
+                          aria-label="Close Volume Panel"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Interactive Custom Range Slider (0 to 100) */}
@@ -181,7 +211,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
                           sounds.setVolume(0);
                           sounds.playVolumeTick();
                         }}
-                        className="hover:text-sand transition-colors"
+                        className="hover:text-sand transition-colors py-1"
                       >
                         0%
                       </button>
@@ -191,7 +221,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
                           sounds.setVolume(25);
                           sounds.playVolumeTick();
                         }}
-                        className="hover:text-sand transition-colors"
+                        className="hover:text-sand transition-colors py-1"
                       >
                         25%
                       </button>
@@ -201,7 +231,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
                           sounds.setVolume(50);
                           sounds.playVolumeTick();
                         }}
-                        className={`transition-colors font-medium ${
+                        className={`transition-colors font-medium py-1 ${
                           volumePercent === 50 && soundEnabled ? 'text-sand' : 'hover:text-sand'
                         }`}
                         title="Default (50%)"
@@ -214,7 +244,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
                           sounds.setVolume(100);
                           sounds.playVolumeTick();
                         }}
-                        className={`transition-colors ${
+                        className={`transition-colors py-1 ${
                           volumePercent === 100 && soundEnabled ? 'text-sand font-medium' : 'hover:text-sand'
                         }`}
                         title="Maximum Output (100%)"
@@ -235,11 +265,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
                 sounds.playLensMount();
                 onOpenAiBrief();
               }}
-              className="inline-flex h-7 items-center gap-2 border border-alabaster/[0.14] px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-secondary transition-colors duration-300 hover:border-alabaster/50 hover:text-alabaster focus:outline-none"
+              className="inline-flex h-7 items-center gap-1.5 sm:gap-2 border border-alabaster/[0.14] px-2.5 sm:px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-secondary transition-colors duration-300 hover:border-alabaster/50 hover:text-alabaster focus:outline-none shrink-0"
               title="Executive Brief (Ctrl+K / Cmd+K)"
             >
               <span>Brief</span>
-              <span className="text-ink-subtle">⌘K</span>
+              <span className="text-ink-subtle hidden sm:inline">⌘K</span>
             </button>
           </div>
         </nav>

@@ -46,7 +46,7 @@ export const ImpactSection: React.FC = () => {
   return (
     <section
       id="impact"
-      className="mx-auto max-w-[1360px] px-6 py-28 sm:py-36 lg:px-12"
+      className="mx-auto max-w-[1360px] px-4 sm:px-6 py-20 sm:py-28 lg:py-36 lg:px-12"
     >
       {/* Swiss 4 / 8 Asymmetric Executive Profile Grid */}
       <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">

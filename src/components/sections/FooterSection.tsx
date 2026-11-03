@@ -23,9 +23,9 @@ export const FooterSection: React.FC = () => {
   return (
     <footer
       id="contact"
-      className="border-t border-alabaster/[0.08] bg-void pt-28 pb-12 sm:pt-36 transition-colors duration-500"
+      className="border-t border-alabaster/[0.08] bg-void pt-20 pb-12 sm:pt-28 lg:pt-36 transition-colors duration-500"
     >
-      <div className="mx-auto max-w-[1360px] px-6 lg:px-12">
+      <div className="mx-auto max-w-[1360px] px-4 sm:px-6 lg:px-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -36,7 +36,7 @@ export const FooterSection: React.FC = () => {
             06 — Contact
           </span>
 
-          <h2 className="mt-5 max-w-3xl text-[clamp(2.5rem,5.5vw,5rem)] font-light leading-[1.05] tracking-[-0.035em] text-alabaster">
+          <h2 className="mt-5 max-w-3xl text-[clamp(2.25rem,5.5vw,5rem)] font-light leading-[1.05] tracking-[-0.035em] text-alabaster">
             Initiate a{' '}
             <span className="font-serif italic font-normal text-sand-light">
               conversation.
@@ -48,14 +48,14 @@ export const FooterSection: React.FC = () => {
           </p>
 
           {/* Monumental Understated Email Copy Trigger */}
-          <div className="mt-12">
+          <div className="mt-10 sm:mt-12 max-w-full overflow-hidden">
             <button
               type="button"
               onClick={handleCopyEmail}
               data-cursor="COPY"
-              className="group inline-flex flex-wrap items-baseline gap-4 border-b border-alabaster/[0.18] pb-3 text-left transition-colors hover:border-alabaster focus:outline-none"
+              className="group inline-flex flex-wrap items-baseline gap-4 border-b border-alabaster/[0.18] pb-3 text-left transition-colors hover:border-alabaster focus:outline-none max-w-full"
             >
-              <span className="text-2xl font-light tracking-[-0.02em] text-alabaster sm:text-4xl">
+              <span className="text-xl sm:text-3xl md:text-4xl font-light tracking-[-0.02em] text-alabaster break-all sm:break-normal">
                 {email}
               </span>
               <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-subtle transition-colors group-hover:text-sand-light">

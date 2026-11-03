@@ -81,7 +81,7 @@ export const PortfolioShell: React.FC = () => {
 
   return (
     <ThemeProvider>
-      <div className="relative min-h-screen bg-void text-alabaster transition-colors duration-500">
+      <div className="relative min-h-screen bg-void text-alabaster transition-colors duration-500 overflow-x-hidden">
         <div
           aria-hidden="true"
           className="awwwards-grain no-print pointer-events-none fixed inset-0 z-[90]"
