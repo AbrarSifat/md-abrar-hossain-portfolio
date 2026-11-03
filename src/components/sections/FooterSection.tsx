@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Check } from 'lucide-react';
+import { sounds } from '@/lib/sound';
 
 export const FooterSection: React.FC = () => {
   const [copied, setCopied] = useState(false);
@@ -11,6 +12,7 @@ export const FooterSection: React.FC = () => {
   const handleCopyEmail = async () => {
     try {
       await navigator.clipboard.writeText(email);
+      sounds.playChime();
       setCopied(true);
       setTimeout(() => setCopied(false), 2400);
     } catch {
@@ -75,6 +77,7 @@ export const FooterSection: React.FC = () => {
               href="https://www.linkedin.com/in/abrarsifat47/"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => sounds.playApertureClick()}
               className="inline-flex items-center gap-1.5 transition-colors hover:text-alabaster"
             >
               <span>LinkedIn</span>
@@ -85,6 +88,7 @@ export const FooterSection: React.FC = () => {
               href="https://wa.me/8801627218950"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => sounds.playApertureClick()}
               className="inline-flex items-center gap-1.5 transition-colors hover:text-alabaster"
             >
               <span>WhatsApp (+880 1627218950)</span>
@@ -94,6 +98,7 @@ export const FooterSection: React.FC = () => {
             <a
               href="/Md_Abrar_Hossain_Resume.pdf"
               download="Md_Abrar_Hossain_Resume.pdf"
+              onClick={() => sounds.playLeicaShutter()}
               className="inline-flex items-center gap-1.5 transition-colors hover:text-alabaster"
             >
               <span>Curriculum Vitae (PDF)</span>

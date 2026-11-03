@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Instrument_Serif, JetBrains_Mono } from 'next/font/google';
+import { Inter, Cormorant_Garamond, JetBrains_Mono } from 'next/font/google';
 import { SITE_CONFIG } from '@/lib/site-config';
 import { getPortfolioJsonLd } from '@/lib/seo-schema';
 import './globals.css';
@@ -10,11 +10,11 @@ const inter = Inter({
   display: 'swap',
 });
 
-const instrumentSerif = Instrument_Serif({
+const cormorantGaramond = Cormorant_Garamond({
   subsets: ['latin'],
-  weight: '400',
+  weight: ['300', '400', '500', '600', '700'],
   style: ['normal', 'italic'],
-  variable: '--font-instrument-serif',
+  variable: '--font-cormorant-garamond',
   display: 'swap',
 });
 
@@ -88,7 +88,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`dark ${inter.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`}
+      className={`dark ${inter.variable} ${cormorantGaramond.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         <script

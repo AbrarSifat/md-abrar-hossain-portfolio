@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { ArrowDown, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { WebGLErrorBoundary } from '@/components/WebGLErrorBoundary';
+import { sounds } from '@/lib/sound';
 
 const CorridorScene = dynamic(
   () => import('@/components/three/CorridorScene').then((mod) => mod.CorridorScene),
@@ -77,6 +78,7 @@ export const HeroSection: React.FC = () => {
                 href="#work"
                 onClick={(e) => {
                   e.preventDefault();
+                  sounds.playLeicaShutter();
                   document.querySelector('#work')?.scrollIntoView({ behavior: 'smooth' });
                 }}
               >
@@ -86,7 +88,11 @@ export const HeroSection: React.FC = () => {
             </Button>
 
             <Button variant="outline" size="lg" asChild>
-              <a href="/Md_Abrar_Hossain_Resume.pdf" download="Md_Abrar_Hossain_Resume.pdf">
+              <a
+                href="/Md_Abrar_Hossain_Resume.pdf"
+                download="Md_Abrar_Hossain_Resume.pdf"
+                onClick={() => sounds.playLeicaShutter()}
+              >
                 <span>Curriculum Vitae</span>
                 <ArrowUpRight className="h-3.5 w-3.5" />
               </a>

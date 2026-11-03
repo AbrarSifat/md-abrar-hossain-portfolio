@@ -54,6 +54,10 @@
                 color 0.45s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  .font-serif {
+    font-family: var(--font-cormorant-garamond), 'Cormorant Garamond', Georgia, serif !important;
+  }
+
   ::-webkit-scrollbar {
     width: 4px;
   }

@@ -3,6 +3,7 @@
 import React, { useMemo, useState } from 'react';
 import { Search, ArrowRight } from 'lucide-react';
 import { AI_BRIEF_PROMPTS } from '@/data/portfolio';
+import { sounds } from '@/lib/sound';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,15 @@ interface AiBriefModalProps {
 export const AiBriefModal: React.FC<AiBriefModalProps> = ({ open, onOpenChange }) => {
   const [query, setQuery] = useState('');
   const [selectedIdx, setSelectedIdx] = useState(0);
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      sounds.playLensMount();
+    } else {
+      sounds.playLensUnmount();
+    }
+    onOpenChange(nextOpen);
+  };
 
   const customAnswer = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -42,7 +52,7 @@ export const AiBriefModal: React.FC<AiBriefModalProps> = ({ open, onOpenChange }
   }, [query]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl">
         <div className="space-y-6">
           <div className="border-b border-alabaster/[0.09] pb-5 pr-10">
@@ -80,6 +90,7 @@ export const AiBriefModal: React.FC<AiBriefModalProps> = ({ open, onOpenChange }
                   key={item.q}
                   type="button"
                   onClick={() => {
+                    sounds.playApertureClick();
                     setQuery('');
                     setSelectedIdx(idx);
                   }}

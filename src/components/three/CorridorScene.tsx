@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useTheme, type ThemeMode } from '@/components/ThemeProvider';
+import { sounds } from '@/lib/sound';
 import landPointsData from '@/data/land-points.json';
 
 function latLonToVec3(lat: number, lon: number, radius: number): THREE.Vector3 {
@@ -28,9 +29,9 @@ const easeOutCubic = (x: number) => {
 const span = (t: number, a: number, b: number) => clamp01((t - a) / (b - a));
 
 /* ------------------------------------------------------------------ */
-/* Executive Radar Ping — Calmer, deliberate, and silky smooth timing  */
+/* Executive Radar Ping — 4s telemetry cadence + instant manual tap   */
 /* ------------------------------------------------------------------ */
-const CYCLE = 3.0; // 3.0s total cycle (calm, dignified Swiss cadence)
+const CYCLE = 4.0; // 4.0s automatic cadence (balanced, engaging telemetry)
 const T = {
   flashIn: [0.0, 0.45],   // target hub flashes gently into view
   draw: [0.2, 1.15],      // hairline arc smoothly glides out (0.95s smooth draw)
@@ -87,7 +88,13 @@ function buildArc(a: THREE.Vector3, b: THREE.Vector3, R: number) {
   return { curve, tube };
 }
 
-function MinimalistSculpture({ isLight }: { isLight: boolean }) {
+function MinimalistSculpture({
+  isLight,
+  onRegisterTrigger,
+}: {
+  isLight: boolean;
+  onRegisterTrigger?: (fn: () => void) => void;
+}) {
   const groupRef = useRef<THREE.Group>(null);
   const ringARef = useRef<THREE.Mesh>(null);
   const ringBRef = useRef<THREE.Mesh>(null);
@@ -103,8 +110,9 @@ function MinimalistSculpture({ isLight }: { isLight: boolean }) {
   const hubHaloMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
   const hubCoreMatRefs = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
 
-  const cycleRef = useRef(-1);
+  const lastPingTimeRef = useRef(0);
   const targetRef = useRef(0);
+  const manualTriggerRef = useRef(false);
 
   const { viewport, camera } = useThree();
   const R = 1.32;
@@ -156,6 +164,12 @@ function MinimalistSculpture({ isLight }: { isLight: boolean }) {
     return pool[Math.floor(Math.random() * pool.length)];
   };
 
+  useEffect(() => {
+    onRegisterTrigger?.(() => {
+      manualTriggerRef.current = true;
+    });
+  }, [onRegisterTrigger]);
+
   useFrame(({ clock, pointer }) => {
     const t = clock.getElapsedTime();
 
@@ -167,14 +181,19 @@ function MinimalistSculpture({ isLight }: { isLight: boolean }) {
       groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetX, 0.035);
     }
 
-    /* ---------- Ping cycle ---------- */
-    const cycle = Math.floor(t / CYCLE);
-    if (cycle !== cycleRef.current) {
-      cycleRef.current = cycle;
+    /* ---------- Ping cycle (33s automatic cadence + instant tap-to-beam) ---------- */
+    if (manualTriggerRef.current) {
+      manualTriggerRef.current = false;
+      lastPingTimeRef.current = t;
+      targetRef.current = pickTarget(targetRef.current);
+      if (arcRef.current) arcRef.current.geometry = arcs[targetRef.current].tube;
+    } else if (t - lastPingTimeRef.current >= CYCLE) {
+      lastPingTimeRef.current = t;
       targetRef.current = pickTarget(targetRef.current);
       if (arcRef.current) arcRef.current.geometry = arcs[targetRef.current].tube;
     }
-    const local = t - cycle * CYCLE;
+
+    const local = t - lastPingTimeRef.current;
     const target = targetRef.current;
     const { curve, tube } = arcs[target];
 
@@ -248,45 +267,31 @@ function MinimalistSculpture({ isLight }: { isLight: boolean }) {
   const palette = isLight
     ? {
         coreColor: '#E9E5DC',
-        coreRoughness: 0.44,
-        coreMetalness: 0.14,
-        clearcoat: 0.62,
-        clearcoatRoughness: 0.32,
-        landDotsColor: '#27272A',
-        landDotsOpacity: 0.38,
-        oceanDotsColor: '#27272A',
-        oceanDotsOpacity: 0.08,
-        arcColor: '#7C6643',
-        beadColor: '#111113',
-        originColor: '#846C4A',
-        hubColor: '#3F3F46',
-        glowColor: '#846C4A',
-        ringPrimary: '#18181B',
-        ringAccent: '#846C4A',
-        ringAOpacity: 0.17,
-        ringBOpacity: 0.25,
-        ringCOpacity: 0.11,
+        coreRoughness: 0.55,
+        wireColor: '#B8A88E',
+        originCore: '#D89A38',
+        originBeacon: '#C88828',
+        hubCore: '#222225',
+        glowColor: '#C88828',
+        ringPrimary: '#A6987E',
+        ringAccent: '#D89A38',
+        ringAOpacity: 0.45,
+        ringBOpacity: 0.35,
+        ringCOpacity: 0.25,
       }
     : {
-        coreColor: '#0B0B0E',
-        coreRoughness: 0.38,
-        coreMetalness: 0.82,
-        clearcoat: 0.75,
-        clearcoatRoughness: 0.28,
-        landDotsColor: '#E2D7C1',
-        landDotsOpacity: 0.45,
-        oceanDotsColor: '#E2D7C1',
-        oceanDotsOpacity: 0.1,
-        arcColor: '#E2D7C1',
-        beadColor: '#FFFFFF',
-        originColor: '#E5C77B',
-        hubColor: '#F4F3EF',
-        glowColor: '#C8B89A',
+        coreColor: '#070709',
+        coreRoughness: 0.35,
+        wireColor: '#C8B89A',
+        originCore: '#F2D272',
+        originBeacon: '#E5C77B',
+        hubCore: '#F4F3EF',
+        glowColor: '#E5C77B',
         ringPrimary: '#F4F3EF',
-        ringAccent: '#C8B89A',
-        ringAOpacity: 0.16,
-        ringBOpacity: 0.19,
-        ringCOpacity: 0.1,
+        ringAccent: '#E5C77B',
+        ringAOpacity: 0.38,
+        ringBOpacity: 0.28,
+        ringCOpacity: 0.2,
       };
 
   const glowBlending = isLight ? THREE.NormalBlending : THREE.AdditiveBlending;
@@ -294,88 +299,94 @@ function MinimalistSculpture({ isLight }: { isLight: boolean }) {
   return (
     <group scale={fitScale}>
       <group ref={groupRef}>
-        {/* Matte Sculpted Core Sphere */}
+        {/* The Solid Planetary Sphere Body */}
         <mesh>
-          <sphereGeometry args={[R * 0.99, 64, 64]} />
-          <meshPhysicalMaterial
+          <sphereGeometry args={[R * 0.992, 64, 64]} />
+          <meshStandardMaterial
             color={palette.coreColor}
             roughness={palette.coreRoughness}
-            metalness={palette.coreMetalness}
-            clearcoat={palette.clearcoat}
-            clearcoatRoughness={palette.clearcoatRoughness}
+            metalness={isLight ? 0.05 : 0.45}
           />
         </mesh>
 
-        {/* Real World Map Continental Landmass Stipple */}
+        {/* Real World Natural Earth Landmass Points Stipple */}
         <points>
           <bufferGeometry>
-            <bufferAttribute attach="attributes-position" args={[landDotPositions, 3]} />
+            <bufferAttribute
+              attach="attributes-position"
+              args={[landDotPositions, 3]}
+            />
           </bufferGeometry>
           <pointsMaterial
             size={0.012}
-            color={palette.landDotsColor}
+            color={palette.wireColor}
             transparent
-            opacity={palette.landDotsOpacity}
+            opacity={isLight ? 0.55 : 0.65}
             sizeAttenuation
+            depthWrite={false}
           />
         </points>
 
-        {/* Faint Ocean Stipple for Spatial Depth */}
+        {/* Faint Ocean Latitude Grid Points */}
         <points>
           <bufferGeometry>
-            <bufferAttribute attach="attributes-position" args={[oceanDotPositions, 3]} />
+            <bufferAttribute
+              attach="attributes-position"
+              args={[oceanDotPositions, 3]}
+            />
           </bufferGeometry>
           <pointsMaterial
             size={0.007}
-            color={palette.oceanDotsColor}
+            color={palette.wireColor}
             transparent
-            opacity={palette.oceanDotsOpacity}
+            opacity={isLight ? 0.12 : 0.15}
             sizeAttenuation
+            depthWrite={false}
           />
         </points>
 
-        {/* Ephemeral Razor-Thin Hairline Ping Arc */}
-        <mesh ref={arcRef} geometry={arcs[0].tube} visible={false}>
+        {/* Luminous Telemetry Hairline Arc */}
+        <mesh ref={arcRef} geometry={arcs[0].tube}>
           <meshBasicMaterial
             ref={arcMatRef}
-            color={palette.arcColor}
+            color={isLight ? '#C88828' : '#F2D272'}
             transparent
-            opacity={0}
+            opacity={0.85}
             depthWrite={false}
-            toneMapped={false}
+            blending={glowBlending}
           />
         </mesh>
 
-        {/* Luminous Light Packet */}
+        {/* High-Velocity Light Packet */}
         <group ref={packetRef} visible={false}>
           <mesh>
-            <sphereGeometry args={[0.015, 14, 14]} />
-            <meshBasicMaterial color={palette.beadColor} toneMapped={false} />
+            <sphereGeometry args={[0.015, 16, 16]} />
+            <meshBasicMaterial color="#FFFFFF" />
           </mesh>
-          <mesh>
-            <sphereGeometry args={[0.044, 16, 16]} />
+          <mesh scale={2.8}>
+            <sphereGeometry args={[0.015, 16, 16]} />
             <meshBasicMaterial
               ref={packetGlowMatRef}
               color={palette.glowColor}
               transparent
-              opacity={0}
+              opacity={0.4}
               depthWrite={false}
               blending={glowBlending}
             />
           </mesh>
         </group>
 
-        {/* Personal Origin Node — Warm Breathing Beacon (Chattogram / Dhaka) */}
+        {/* Personal Origin Node — Warm Golden Beacon (Chattogram/Dhaka Hub) */}
         <group position={originPos}>
           <mesh>
-            <sphereGeometry args={[0.025, 16, 16]} />
-            <meshBasicMaterial color={palette.originColor} toneMapped={false} />
+            <sphereGeometry args={[0.024, 20, 20]} />
+            <meshBasicMaterial color={palette.originCore} />
           </mesh>
           <mesh ref={originHaloRef}>
-            <sphereGeometry args={[0.025, 16, 16]} />
+            <sphereGeometry args={[0.046, 20, 20]} />
             <meshBasicMaterial
               ref={originHaloMatRef}
-              color={palette.originColor}
+              color={palette.originBeacon}
               transparent
               opacity={0.22}
               depthWrite={false}
@@ -384,19 +395,18 @@ function MinimalistSculpture({ isLight }: { isLight: boolean }) {
           </mesh>
         </group>
 
-        {/* 15 Major World Cities Accurately Mapped to Real World Continents */}
+        {/* 15 Widely Spaced World Metropolises Nodes */}
         {hubPositions.map((pos, i) => (
           <group key={CLIENT_HUBS[i].id} position={pos}>
             <mesh>
-              <sphereGeometry args={[0.014, 14, 14]} />
+              <sphereGeometry args={[0.016, 16, 16]} />
               <meshBasicMaterial
                 ref={(m) => {
                   hubCoreMatRefs.current[i] = m;
                 }}
-                color={palette.hubColor}
+                color={palette.hubCore}
                 transparent
-                opacity={0.65}
-                toneMapped={false}
+                opacity={0.75}
               />
             </mesh>
             <mesh
@@ -440,9 +450,44 @@ function MinimalistSculpture({ isLight }: { isLight: boolean }) {
 export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOverride }) => {
   const { theme } = useTheme();
   const isLight = (modeOverride ?? theme) === 'light';
+  const triggerFnRef = useRef<(() => void) | null>(null);
+  const [tapPulsing, setTapPulsing] = useState(false);
+  const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const lastTriggerTimeRef = useRef(0);
+
+  const handleTrigger = () => {
+    const now = Date.now();
+    if (now - lastTriggerTimeRef.current < 200) return;
+    lastTriggerTimeRef.current = now;
+    sounds.playLeicaShutter();
+    setTapPulsing(true);
+    setTimeout(() => setTapPulsing(false), 300);
+    triggerFnRef.current?.();
+  };
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!pointerStartRef.current) return;
+    const dx = Math.abs(e.clientX - pointerStartRef.current.x);
+    const dy = Math.abs(e.clientY - pointerStartRef.current.y);
+    const dt = Date.now() - pointerStartRef.current.time;
+    // Tap detection: short tap/click without long orbit drag
+    if (dx < 10 && dy < 10 && dt < 400) {
+      handleTrigger();
+    }
+    pointerStartRef.current = null;
+  };
 
   return (
-    <div className="relative h-full w-full cursor-grab active:cursor-grabbing">
+    <div
+      className="relative h-full w-full cursor-grab active:cursor-grabbing select-none"
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      data-cursor="BEAM"
+    >
       <Canvas
         camera={{ position: [0, 0.02, 5.15], fov: 39 }}
         dpr={[1, 2]}
@@ -459,7 +504,12 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
           intensity={isLight ? 0.65 : 0.75}
           color="#C8B89A"
         />
-        <MinimalistSculpture isLight={isLight} />
+        <MinimalistSculpture
+          isLight={isLight}
+          onRegisterTrigger={(fn) => {
+            triggerFnRef.current = fn;
+          }}
+        />
         <OrbitControls
           enableZoom={false}
           enablePan={false}
@@ -468,6 +518,32 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
           enableDamping
         />
       </Canvas>
+
+      {/* Catchy Floating "Tap" Micro-Pill */}
+      <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleTrigger();
+          }}
+          className={`pointer-events-auto group flex items-center gap-2 rounded-full border border-sand/35 bg-obsidian/90 px-3.5 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.65)] backdrop-blur-md transition-all duration-300 hover:border-sand hover:scale-105 active:scale-95 ${
+            tapPulsing ? 'border-sand bg-sand/25 scale-105 ring-2 ring-sand/40' : ''
+          }`}
+          aria-label="Tap to shoot telemetry beam"
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sand opacity-80" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-sand" />
+          </span>
+          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-sand-light font-medium transition-colors group-hover:text-alabaster">
+            Tap
+          </span>
+          <span className="font-mono text-[9px] text-ink-subtle">
+            to beam
+          </span>
+        </button>
+      </div>
     </div>
   );
 };

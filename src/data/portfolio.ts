@@ -345,7 +345,19 @@ export const CAREER_TIMELINE: CareerMilestone[] = [
   },
 ];
 
-export const VERIFIED_CREDENTIALS = [
+export interface VerifiedCredential {
+  id: string;
+  title: string;
+  issuer: string;
+  date: string;
+  credentialId: string;
+  skills: string;
+  verifyUrl: string;
+  badge: string;
+  image: string;
+}
+
+export const VERIFIED_CREDENTIALS: VerifiedCredential[] = [
   {
     id: 'uc-davis',
     title: 'Cross-Cultural Communication and Management',
@@ -355,6 +367,7 @@ export const VERIFIED_CREDENTIALS = [
     skills: 'Global Team Governance · Cross-Cultural Negotiation',
     verifyUrl: 'https://coursera.org/verify/HY13BEC60ZDW',
     badge: 'Verified Credential',
+    image: '/certificates/uc-davis.png',
   },
   {
     id: 'u-london',
@@ -365,6 +378,7 @@ export const VERIFIED_CREDENTIALS = [
     skills: 'Executive Stakeholder Relations · International B2B Strategy',
     verifyUrl: 'https://coursera.org/verify/9BNL06SKI0UC',
     badge: 'Verified Credential',
+    image: '/certificates/university-of-london.jpg',
   },
   {
     id: 'wadhwani',
@@ -375,6 +389,7 @@ export const VERIFIED_CREDENTIALS = [
     skills: 'Project Management & Leadership · Soft Skills Training · Global Communication',
     verifyUrl: 'https://www.linkedin.com/in/abrarsifat47/details/certifications/',
     badge: 'Verified Credential',
+    image: '/certificates/wadhwani-foundation.png',
   },
 ];
 

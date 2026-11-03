@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CAREER_TIMELINE, type PersonaType } from '@/data/portfolio';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { sounds } from '@/lib/sound';
 
 export const TrajectorySection: React.FC = () => {
   const [lens, setLens] = useState<PersonaType>('all');
@@ -30,7 +31,13 @@ export const TrajectorySection: React.FC = () => {
           </h2>
         </div>
 
-        <Tabs value={lens} onValueChange={(v) => setLens(v as PersonaType)}>
+        <Tabs
+          value={lens}
+          onValueChange={(v) => {
+            sounds.playApertureClick();
+            setLens(v as PersonaType);
+          }}
+        >
           <TabsList>
             <TabsTrigger value="all">Complete</TabsTrigger>
             <TabsTrigger value="brm">Commercial &amp; BRM</TabsTrigger>
@@ -44,6 +51,7 @@ export const TrajectorySection: React.FC = () => {
         {milestones.map((item, idx) => (
           <motion.article
             key={item.id}
+            onMouseEnter={() => sounds.playScrollTick(0.2)}
             initial={{ opacity: 0, y: 18 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-40px' }}

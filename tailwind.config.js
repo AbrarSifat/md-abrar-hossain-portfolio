@@ -7,7 +7,7 @@ module.exports = {
       fontFamily: {
         sans: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
         display: ['var(--font-inter)', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
-        serif: ['var(--font-instrument-serif)', 'Georgia', 'serif'],
+        serif: ['var(--font-cormorant-garamond)', 'Cormorant Garamond', 'Georgia', 'serif'],
         mono: ['var(--font-jetbrains-mono)', 'monospace'],
       },
       colors: {

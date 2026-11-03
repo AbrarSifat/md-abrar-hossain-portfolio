@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowUpRight } from 'lucide-react';
+import { sounds } from '@/lib/sound';
 import {
   CASE_STUDIES,
   CORRIDOR_ACCOUNTS,
@@ -20,6 +21,8 @@ import {
 export const WorkSection: React.FC = () => {
   const [persona, setPersona] = useState<PersonaType>('all');
   const [activeStudy, setActiveStudy] = useState<CaseStudy | null>(null);
+  const [hoveredStudy, setHoveredStudy] = useState<CaseStudy | null>(null);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const filteredStudies = CASE_STUDIES.filter(
     (s) => persona === 'all' || s.persona === 'both' || s.persona === persona
@@ -45,7 +48,13 @@ export const WorkSection: React.FC = () => {
             </h2>
           </div>
 
-          <Tabs value={persona} onValueChange={(v) => setPersona(v as PersonaType)}>
+          <Tabs
+            value={persona}
+            onValueChange={(v) => {
+              sounds.playApertureClick();
+              setPersona(v as PersonaType);
+            }}
+          >
             <TabsList>
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="brm">Commercial &amp; BRM</TabsTrigger>
@@ -55,13 +64,24 @@ export const WorkSection: React.FC = () => {
         </div>
 
         {/* Sibling-Dimming Minimalist Editorial Index */}
-        <div className="group/list divide-y divide-alabaster/[0.09] border-y border-alabaster/[0.09]">
+        <div
+          onMouseMove={(e) => setMousePos({ x: e.clientX, y: e.clientY })}
+          onMouseLeave={() => setHoveredStudy(null)}
+          className="group/list divide-y divide-alabaster/[0.09] border-y border-alabaster/[0.09]"
+        >
           {filteredStudies.map((study) => (
             <motion.button
               key={study.id}
               type="button"
               data-cursor="VIEW"
-              onClick={() => setActiveStudy(study)}
+              onMouseEnter={() => {
+                sounds.playScrollTick();
+                setHoveredStudy(study);
+              }}
+              onClick={() => {
+                sounds.playLensMount();
+                setActiveStudy(study);
+              }}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
@@ -101,6 +121,69 @@ export const WorkSection: React.FC = () => {
           ))}
         </div>
 
+        {/* Floating Cursor Hover Portal (One Page Love Signature Interaction) */}
+        <AnimatePresence>
+          {hoveredStudy && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88 }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                x: mousePos.x + 28,
+                y: mousePos.y - 70,
+              }}
+              exit={{ opacity: 0, scale: 0.88 }}
+              transition={{
+                type: 'spring',
+                stiffness: 450,
+                damping: 32,
+                mass: 0.5,
+              }}
+              className="pointer-events-none fixed z-50 hidden w-64 rounded-xl border border-alabaster/[0.14] bg-obsidian-subtle/95 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.6)] backdrop-blur-2xl md:block"
+              style={{
+                boxShadow: `0 20px 40px -15px ${hoveredStudy.accentColor}30`,
+              }}
+            >
+              <div className="flex items-center justify-between border-b border-alabaster/[0.08] pb-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-ink-subtle">
+                  Dossier {hoveredStudy.index}
+                </span>
+                <span
+                  className="font-mono text-[9px] uppercase tracking-[0.14em]"
+                  style={{ color: hoveredStudy.accentColor }}
+                >
+                  {hoveredStudy.location}
+                </span>
+              </div>
+
+              <div className="mt-3">
+                <span className="block text-2xl font-light tracking-tight text-alabaster">
+                  {hoveredStudy.headlineMetric}
+                </span>
+                <span className="block font-mono text-[10px] uppercase tracking-[0.12em] text-ink-muted">
+                  {hoveredStudy.headlineMetricLabel}
+                </span>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-1">
+                {hoveredStudy.stack.slice(0, 3).map((tool) => (
+                  <span
+                    key={tool}
+                    className="rounded border border-alabaster/[0.08] bg-alabaster/[0.04] px-1.5 py-0.5 font-mono text-[9px] text-ink-subtle"
+                  >
+                    {tool}
+                  </span>
+                ))}
+              </div>
+
+              <div className="mt-3.5 flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.14em] text-sand-light">
+                <span>Click to inspect dossier</span>
+                <ArrowUpRight className="h-2.5 w-2.5" />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Semantic Pre-Rendered Case Dossier Text for Search & AI Crawlers (Zero Visual Change) */}
         <div className="sr-only">
           {CASE_STUDIES.map((study) => (
@@ -118,7 +201,15 @@ export const WorkSection: React.FC = () => {
         </div>
 
         {/* Minimalist Architectural Case Dossier Modal */}
-        <Dialog open={!!activeStudy} onOpenChange={(open) => !open && setActiveStudy(null)}>
+        <Dialog
+          open={!!activeStudy}
+          onOpenChange={(open) => {
+            if (!open) {
+              sounds.playLensUnmount();
+              setActiveStudy(null);
+            }
+          }}
+        >
           {activeStudy && (
             <DialogContent>
               <div className="space-y-8">
@@ -181,16 +272,27 @@ export const WorkSection: React.FC = () => {
                 {/* Execution Sequence & Audited Outcomes */}
                 <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
                   <div>
-                    <h4 className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-subtle">
-                      Execution Sequence
-                    </h4>
-                    <ol className="mt-3 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-subtle">
+                        Execution Pipeline
+                      </h4>
+                      <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-sand-light">
+                        0{activeStudy.architectureFlow.length} Sequential Phases
+                      </span>
+                    </div>
+                    <ol className="mt-3 space-y-2">
                       {activeStudy.architectureFlow.map((step, idx) => (
-                        <li key={step} className="flex items-baseline gap-3 text-xs font-light text-ink-secondary">
-                          <span className="font-mono text-[10px] text-ink-subtle">
+                        <li
+                          key={step}
+                          onMouseEnter={() => sounds.playTick()}
+                          className="group/step relative flex items-start gap-3 rounded-lg border border-alabaster/[0.07] bg-alabaster/[0.02] p-2.5 transition-all duration-300 hover:border-sand/40 hover:bg-sand/[0.05] hover:shadow-[0_0_20px_rgba(200,184,154,0.12)] active:border-sand/50 active:bg-sand/[0.08]"
+                        >
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full font-mono text-[10px] bg-alabaster/[0.08] text-ink-subtle transition-colors duration-300 group-hover/step:bg-sand-light group-hover/step:text-obsidian group-hover/step:font-semibold">
                             0{idx + 1}
                           </span>
-                          <span>{step}</span>
+                          <span className="text-xs font-light leading-relaxed text-ink-secondary transition-colors duration-300 group-hover/step:text-alabaster group-hover/step:font-normal">
+                            {step}
+                          </span>
                         </li>
                       ))}
                     </ol>
@@ -243,7 +345,10 @@ export const WorkSection: React.FC = () => {
           </div>
 
           <div className="lg:col-span-8">
-            <Tabs defaultValue={CORRIDOR_ACCOUNTS[0].id}>
+            <Tabs
+              defaultValue={CORRIDOR_ACCOUNTS[0].id}
+              onValueChange={() => sounds.playApertureClick()}
+            >
               <div className="overflow-x-auto">
                 <TabsList className="w-max min-w-full">
                   {CORRIDOR_ACCOUNTS.map((acc) => (

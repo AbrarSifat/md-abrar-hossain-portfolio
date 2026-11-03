@@ -3,17 +3,23 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from '@/components/ThemeProvider';
+import { sounds } from '@/lib/sound';
 
 export const ThemeToggle: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
+
+  const handleToggle = () => {
+    sounds.playApertureClick();
+    toggleTheme();
+  };
 
   return (
     <motion.button
       type="button"
       role="switch"
       aria-checked={!isDark}
-      onClick={toggleTheme}
+      onClick={handleToggle}
       data-cursor="THEME"
       whileHover={{ scale: 1.04 }}
       whileTap={{ scale: 0.93 }}
