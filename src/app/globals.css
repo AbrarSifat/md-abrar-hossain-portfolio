@@ -77,6 +77,43 @@
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
 }
 
+/* Apple Frosted Glass Slider Range Input */
+input[type='range'].apple-glass-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  outline: none;
+  cursor: pointer;
+}
+
+input[type='range'].apple-glass-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+  transition: transform 0.14s ease, box-shadow 0.14s ease;
+}
+
+input[type='range'].apple-glass-slider::-webkit-slider-thumb:hover,
+input[type='range'].apple-glass-slider::-webkit-slider-thumb:active {
+  transform: scale(1.15);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35), 0 0 0 2px rgba(181, 148, 88, 0.45);
+}
+
+input[type='range'].apple-glass-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.28);
+}
+
 @media print {
   .no-print {
     display: none !important;

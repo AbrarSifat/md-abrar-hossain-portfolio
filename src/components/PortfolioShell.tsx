@@ -57,9 +57,21 @@ export const PortfolioShell: React.FC = () => {
     window.addEventListener('keydown', unlockAudio, { once: true, passive: true });
     window.addEventListener('scroll', unlockAudio, { once: true, passive: true });
 
+    // Tactile Leica mechanical click on every interactive tap/click across the entire portfolio
+    const handleGlobalTap = (e: MouseEvent | TouchEvent) => {
+      const target = (e.target as HTMLElement | null)?.closest(
+        'button, a, input, [role="button"], [role="tab"], summary'
+      );
+      if (target) {
+        sounds.playInteractiveTap();
+      }
+    };
+    window.addEventListener('click', handleGlobalTap, { capture: true, passive: true });
+
     return () => {
       cancelAnimationFrame(rafId);
       lenis.destroy();
+      window.removeEventListener('click', handleGlobalTap, { capture: true });
     };
   }, []);
 

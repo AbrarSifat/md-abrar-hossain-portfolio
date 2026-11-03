@@ -14,6 +14,7 @@ class LeicaSoundEngine {
   private enabled: boolean = true;
   private volume: number = 50; // Default 50% (range: 0 to 100, maps to 0.0 to 4.0 gain headroom)
   private lastScrollTickTime: number = 0;
+  private lastInteractiveSoundTime: number = 0;
   private listeners: Set<(enabled: boolean, volume: number) => void> = new Set();
 
   constructor() {
@@ -183,19 +184,35 @@ class LeicaSoundEngine {
 
     try {
       const now = this.ctx.currentTime;
+      // High transient snap
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1480, now);
-      osc.frequency.exponentialRampToValueAtTime(740, now + 0.007);
+      osc.frequency.setValueAtTime(1750, now);
+      osc.frequency.exponentialRampToValueAtTime(780, now + 0.009);
 
-      gain.gain.setValueAtTime(0.045, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.007);
+      gain.gain.setValueAtTime(0.07, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.009);
 
       osc.connect(gain);
       gain.connect(this.destination);
       osc.start(now);
-      osc.stop(now + 0.007);
+      osc.stop(now + 0.009);
+
+      // Low brass chassis resonance
+      const bodyOsc = this.ctx.createOscillator();
+      const bodyGain = this.ctx.createGain();
+      bodyOsc.type = 'sine';
+      bodyOsc.frequency.setValueAtTime(540, now);
+      bodyOsc.frequency.exponentialRampToValueAtTime(280, now + 0.014);
+
+      bodyGain.gain.setValueAtTime(0.05, now);
+      bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.014);
+
+      bodyOsc.connect(bodyGain);
+      bodyGain.connect(this.destination);
+      bodyOsc.start(now);
+      bodyOsc.stop(now + 0.014);
     } catch {
       // Audio gracefully suppressed
     }
@@ -229,18 +246,18 @@ class LeicaSoundEngine {
       const now = this.ctx.currentTime;
 
       // Part A: Front Curtain Trip (High-frequency mechanical impulse)
-      const noiseBuf = this.createNoiseBuffer(0.008);
+      const noiseBuf = this.createNoiseBuffer(0.009);
       if (noiseBuf) {
         const noise = this.ctx.createBufferSource();
         noise.buffer = noiseBuf;
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(2200, now);
-        filter.Q.setValueAtTime(3.2, now);
+        filter.frequency.setValueAtTime(2400, now);
+        filter.Q.setValueAtTime(3.4, now);
 
         const noiseGain = this.ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.045, now);
-        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.008);
+        noiseGain.gain.setValueAtTime(0.075, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.009);
 
         noise.connect(filter);
         filter.connect(noiseGain);
@@ -252,31 +269,31 @@ class LeicaSoundEngine {
       const osc = this.ctx.createOscillator();
       const oscGain = this.ctx.createGain();
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(320, now);
-      osc.frequency.exponentialRampToValueAtTime(65, now + 0.026);
+      osc.frequency.setValueAtTime(340, now);
+      osc.frequency.exponentialRampToValueAtTime(65, now + 0.028);
 
-      oscGain.gain.setValueAtTime(0.05, now);
-      oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.026);
+      oscGain.gain.setValueAtTime(0.075, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.028);
 
       osc.connect(oscGain);
       oscGain.connect(this.destination);
       osc.start(now);
-      osc.stop(now + 0.026);
+      osc.stop(now + 0.028);
 
       // Part C: Rear Curtain Catch Bumper (+14ms mechanical settle)
       const catchOsc = this.ctx.createOscillator();
       const catchGain = this.ctx.createGain();
       catchOsc.type = 'triangle';
-      catchOsc.frequency.setValueAtTime(460, now + 0.014);
-      catchOsc.frequency.exponentialRampToValueAtTime(110, now + 0.024);
+      catchOsc.frequency.setValueAtTime(480, now + 0.014);
+      catchOsc.frequency.exponentialRampToValueAtTime(120, now + 0.026);
 
-      catchGain.gain.setValueAtTime(0.035, now + 0.014);
-      catchGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.024);
+      catchGain.gain.setValueAtTime(0.055, now + 0.014);
+      catchGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.026);
 
       catchOsc.connect(catchGain);
       catchGain.connect(this.destination);
       catchOsc.start(now + 0.014);
-      catchOsc.stop(now + 0.024);
+      catchOsc.stop(now + 0.026);
     } catch {
       // Audio gracefully suppressed
     }
@@ -284,8 +301,8 @@ class LeicaSoundEngine {
 
   /**
    * 2. Leica Summicron Aperture Half-Stop Ball Detent ("Click")
-   * Precision machined ball-bearing click into brass grooves.
-   * Used for navigation items, filter tabs, theme toggles, and buttons.
+   * Precision 3-tier machined ball-bearing click into solid brass grooves.
+   * Noticeable, crisp, tactile, and distinct across mobile and laptop speakers.
    */
   public playApertureClick() {
     if (!this.enabled) return;
@@ -294,31 +311,76 @@ class LeicaSoundEngine {
 
     try {
       const now = this.ctx.currentTime;
-      // Micro-randomized frequency (±2%) so it sounds physical and mechanical
-      const jitter = (Math.random() - 0.5) * 40;
+      const jitter = (Math.random() - 0.5) * 45;
 
+      // Component 1: High metallic ball snap transient
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'triangle';
-      osc.frequency.setValueAtTime(1850 + jitter, now);
-      osc.frequency.exponentialRampToValueAtTime(950 + jitter, now + 0.009);
+      osc.frequency.setValueAtTime(2850 + jitter, now);
+      osc.frequency.exponentialRampToValueAtTime(1420 + jitter, now + 0.012);
 
-      gain.gain.setValueAtTime(0.032, now);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.009);
+      gain.gain.setValueAtTime(0.11, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
 
       osc.connect(gain);
       gain.connect(this.destination);
       osc.start(now);
-      osc.stop(now + 0.009);
+      osc.stop(now + 0.012);
+
+      // Component 2: Spring-loaded bearing notch strike (tactile mechanical friction)
+      const noiseBuf = this.createNoiseBuffer(0.007);
+      if (noiseBuf) {
+        const noise = this.ctx.createBufferSource();
+        noise.buffer = noiseBuf;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(3200 + jitter, now);
+        filter.Q.setValueAtTime(3.6, now);
+
+        const noiseGain = this.ctx.createGain();
+        noiseGain.gain.setValueAtTime(0.08, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.007);
+
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(this.destination);
+        noise.start(now);
+      }
+
+      // Component 3: Solid machined brass chassis resonance
+      const body = this.ctx.createOscillator();
+      const bodyGain = this.ctx.createGain();
+      body.type = 'sine';
+      body.frequency.setValueAtTime(740 + jitter * 0.5, now);
+      body.frequency.exponentialRampToValueAtTime(320, now + 0.018);
+
+      bodyGain.gain.setValueAtTime(0.085, now);
+      bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.018);
+
+      body.connect(bodyGain);
+      bodyGain.connect(this.destination);
+      body.start(now);
+      body.stop(now + 0.018);
     } catch {
       // Audio gracefully suppressed
     }
   }
 
   /**
+   * Site-wide debounced interactive tap feedback for links, buttons, and controls.
+   */
+  public playInteractiveTap() {
+    const nowMs = performance.now();
+    if (nowMs - this.lastInteractiveSoundTime < 45) return;
+    this.lastInteractiveSoundTime = nowMs;
+    this.playApertureClick();
+  }
+
+  /**
    * 3. Precision Film Advance Ratchet / Knurled Focus Ring Detent (Scroll Tick)
    * Ultra-soft, whisper-quiet micro detent specifically engineered for continuous scrolling.
-   * Throttled to prevent any buzzing; velocity-adaptive volume.
+   * Decreased by 25% for a subtle, silky acoustic texture.
    */
   public playScrollTick(velocity: number = 1) {
     if (!this.enabled) return;
@@ -334,7 +396,8 @@ class LeicaSoundEngine {
       const now = this.ctx.currentTime;
       const jitter = (Math.random() - 0.5) * 50;
       const normalizedVel = Math.min(2.5, Math.max(0.6, Math.abs(velocity)));
-      const vol = 0.012 * normalizedVel;
+      // Decreased by 25% (from 0.012 to 0.009)
+      const vol = 0.009 * normalizedVel;
 
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
