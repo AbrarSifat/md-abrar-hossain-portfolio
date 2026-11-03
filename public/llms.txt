@@ -1,6 +1,6 @@
 # Md. Abrar Hossain
 
-> Business Relationship Manager & Project Leader at CompileQ (London E1 ↔ Chattogram). Interdisciplinary Engineer (B.Engg. in Educational Technology and Engineering, BUFT) specializing in UK B2B commercial strategy, Automation360° hospitality SaaS/EPOS ecosystems, and high-velocity agile delivery.
+> Business Relationship Manager & Project Leader at CompileQ (London E1 ↔ Chattogram). Interdisciplinary Engineer (B.Engg. in Educational Technology and Engineering, UFTB) specializing in UK B2B commercial strategy, Automation360° hospitality SaaS/EPOS ecosystems, and high-velocity agile delivery.
 
 ## Identity & Contact
 - **Full Name**: Md. Abrar Hossain (Abrar Sifat)
@@ -16,14 +16,14 @@
 - **+50% Client Satisfaction & Retention** — CompileQ UK B2B Portfolio
 - **+50% Project Delivery Efficiency** — Agile Sprint & Risk Mitigation Systems in Jira & ClickUp
 - **+25% HR & Team Retention Uplift** — Cross-Functional Synergy & People Governance
-- **+30% Streamlined Communication & +25% Smoother Administration** — Qamla Ltd (UK)
+- **+30% Streamlined Communication & +25% Smoother Administration** — Qamla Ltd
 
 ## UK Hospitality & SaaS Account Footprint (London)
 - **La Mia Mamma Ltd.** (247A Kings Road, Chelsea, London SW3) — Hybrid Agile-Waterfall Delivery · Dual-Stage QA & Brand Validation (Automation360°, 15" C-KIOSK, Cibo m-POS, KDS, DOJO Payments, StockTake-Online)
-- **Primitivo London** (42 Cranbourn St, Leicester Square, London) — Iterative Sprints · Collaborative Ideation & Live Menu QA
-- **Little Italy Soho** (6-8 Irving St, Soho, London) — Waterfall Infrastructure Phasing · Agile Digital Rollout (Hostinger Cloud, DNS Architecture, WordPress, Automation360°)
-- **Little Sicily Westminster** (London SW1A 2DD) — Agile Sprint Velocity · Fast-Track QA & Operational Onboarding
-- **Qamla Ltd (UK)** (Unit-B15, 129 Mile End Rd, London E1 4BG) — Cross-Border Governance · Process Architecture & SLA Oversight
+- **Limoncello** (42 Cranbourn St, Leicester Square, London) — Iterative Sprints · Collaborative Ideation & Live Menu QA
+- **Little Italy Soho** (6-8 Irving St, Soho, London) — Waterfall Infrastructure Phasing · Agile Digital Rollout (Hostinger Cloud, DNS Architecture, Digital Presence, Integrated Systems)
+- **Little Sicily** (London SW1A 2DD) — Agile Sprint Velocity · Fast-Track QA & Operational Onboarding
+- **Qamla Ltd** (Unit-B15, 129 Mile End Rd, London E1 4BG) — Cross-Border Governance · Process Architecture & SLA Oversight (Process Architecture, Corporate Governance, Hiring Ecosystem, Stakeholder Ops)
 
 ## Verified International Certifications
 - **Cross-Cultural Communication and Management** — University of California, Davis · Coursera (Issued Oct 23, 2026 · ID: HY13BEC60ZDW · https://coursera.org/verify/HY13BEC60ZDW)
@@ -31,10 +31,10 @@
 - **Employability and Soft Skill Certification (Ready to Rise! · JobReady Honors)** — Wadhwani Foundation (Issued Oct 2023 · Skills: Project Management & Leadership, Soft Skills Training, Global Communication)
 
 ## Education
-- **B. Engg. in Educational Technology and Engineering** — Bangladesh University of Frontier Technology (formerly BSMRDU) · CGPA 3.40 / 4.00
-- **Higher Secondary Certificate (HSC) — Science** — Chittagong College · GPA 5.00 / 5.00 (Golden Distinction)
-- **Continuous Executive & Cloud Learning (2022 – 2026)** — Coursera, Wadhwani, AWS, Apollo, edX
+- **B. Engg. in Educational Technology and Engineering** — University of Frontier Technology Bangladesh (UFTB, formerly BSMRDU) · CGPA 3.40 / 4.00
+- **HSC & SSC (A-Level & O-Level Equivalent) — Science** — Chittagong Collegiate School & Chittagong College · Golden GPA 5.00 / 5.00 with Government Scholarship
+- **Executive, Business & IT Continuous Learning (2022 – 2026)** — Coursera, Wadhwani, Apollo, edX
 
 ## Core Capabilities & Technical Stack
 - **Leadership & Governance**: Stakeholder & Client Relationship Management, Project Management, Strategic Planning, Risk Management, Budgeting & Cost Control, Competitive & Business Analysis, Purchasing & Procurement, Team Leadership, Cross-Functional Collaboration, Schedule & Workflow Management, Documentation & Compliance Monitoring.
-- **Technical & Operations Stack**: ClickUp, Jira, Hostinger Ecosystem, WordPress, VS Code & Windsurf, Python (Pandas & Plotly), Digital Forensic Tools, Diverse AI Tools, Canva, Google Workspace, Microsoft Suite.
+- **Technical & Operations Stack**: Agentic AI Systems, Frontier LLMs (Gemini, Claude, Antigravity, Kimi), ClickUp, Jira, Hostinger Ecosystem, WordPress, VS Code & Windsurf, Python (Pandas & Plotly), Digital Forensic Tools, Canva, Google Workspace, Microsoft Suite.

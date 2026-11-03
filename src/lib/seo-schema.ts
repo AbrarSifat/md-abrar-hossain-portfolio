@@ -64,11 +64,15 @@ export function getPortfolioJsonLd() {
         alumniOf: [
           {
             '@type': 'CollegeOrUniversity',
-            name: 'Bangladesh University of Frontier Technology (formerly BSMRDU)',
+            name: 'University of Frontier Technology Bangladesh (formerly BSMRDU)',
           },
           {
             '@type': 'EducationalOrganization',
             name: 'Chittagong College',
+          },
+          {
+            '@type': 'EducationalOrganization',
+            name: 'Chittagong Collegiate School',
           },
         ],
         knowsAbout: [

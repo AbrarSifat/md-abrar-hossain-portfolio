@@ -72,9 +72,8 @@ export const ImpactSection: React.FC = () => {
                 className="h-full w-full object-cover object-top grayscale-[22%] contrast-[1.03] transition-all duration-700 hover:grayscale-0"
               />
             </div>
-            <figcaption className="mt-4 flex items-center justify-between border-b border-alabaster/[0.08] pb-3 font-mono text-[11px] text-ink-muted">
-              <span className="text-alabaster">Md. Abrar Hossain</span>
-              <span>CompileQ · UK</span>
+            <figcaption className="mt-4 flex items-center justify-center border-b border-alabaster/[0.08] pb-3 text-center font-mono text-[11px] text-ink-muted">
+              <span className="text-alabaster">Md. Abrar Hossain (Sifat)</span>
             </figcaption>
           </motion.figure>
         </div>
@@ -96,7 +95,7 @@ export const ImpactSection: React.FC = () => {
             </h2>
 
             <p className="mt-6 max-w-2xl text-sm font-light leading-[1.8] text-ink-muted sm:text-[15px]">
-              With a Bachelor of Engineering in Educational Technology &amp; Engineering from BUFT and multi-year leadership across CompileQ and Qamla Ltd in London, Abrar operates natively between boardroom commercial structuring and day-to-day technical execution in Jira, ClickUp, Cloud/DNS, and Python data workflows.
+              With a Bachelor of Engineering in Educational Technology &amp; Engineering from UFTB and multi-year leadership across CompileQ and Qamla Ltd in London, Abrar operates natively between boardroom commercial structuring and hands-on day-to-day technical and sub-technical execution—driving system architecture, operational precision, and cross-functional delivery.
             </p>
           </motion.div>
 

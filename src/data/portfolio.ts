@@ -94,8 +94,8 @@ export const CORRIDOR_ACCOUNTS: CorridorAccount[] = [
       'Orchestrated cross-cultural alignment between London executives and offshore engineering. Governed hardware logistics with Waterfall milestones while running Agile software sprints, brand identity reviews, and rigorous QA acceptance testing.',
   },
   {
-    id: 'primitivo',
-    name: 'Primitivo London',
+    id: 'limoncello',
+    name: 'Limoncello',
     location: '42 Cranbourn St, Leicester Square, London',
     sector: 'West End Hospitality',
     governanceModel: 'Iterative Sprints · Collaborative Ideation & Live Menu QA',
@@ -109,13 +109,13 @@ export const CORRIDOR_ACCOUNTS: CorridorAccount[] = [
     location: '6-8 Irving St, Soho, London',
     sector: 'Iconic Soho Restaurant',
     governanceModel: 'Waterfall Infrastructure Gating · Agile Digital Rollout',
-    ecosystem: ['Hostinger Cloud', 'DNS Architecture', 'WordPress', 'Automation360°'],
+    ecosystem: ['Hostinger Cloud', 'DNS Architecture', 'Digital Presence', 'Integrated Systems'],
     summary:
       'Governed zero-downtime DNS and cloud architecture migration with phased Waterfall gating, coupled with Agile iterations for customer-facing digital touchpoints and brand voice alignment.',
   },
   {
     id: 'little-sicily',
-    name: 'Little Sicily Westminster',
+    name: 'Little Sicily',
     location: 'London SW1A 2DD',
     sector: 'Central London Dining',
     governanceModel: 'Agile Sprint Velocity · Fast-Track QA & Operational Onboarding',
@@ -125,11 +125,11 @@ export const CORRIDOR_ACCOUNTS: CorridorAccount[] = [
   },
   {
     id: 'qamla',
-    name: 'Qamla Ltd (UK)',
+    name: 'Qamla Ltd',
     location: 'Unit-B15, 129 Mile End Rd, London E1 4BG',
-    sector: 'UK Hospitality & Recruitment Platform',
+    sector: 'Global Hospitality & Recruitment Platform',
     governanceModel: 'Cross-Border Governance · Process Architecture & SLA Oversight',
-    ecosystem: ['Process Architecture', 'Corporate Governance', 'Google Workspace', 'Stakeholder Ops'],
+    ecosystem: ['Process Architecture', 'Corporate Governance', 'Hiring Ecosystem', 'Stakeholder Ops'],
     summary:
       'Streamlined cross-border executive communications and operational workflows across London and Bangladesh hubs by +30%, enforcing structured documentation and transparent team accountability.',
   },
@@ -158,7 +158,7 @@ export const CASE_STUDIES: CaseStudy[] = [
     strategy:
       'Orchestrated cross-functional engineering, design, and hospitality leadership across time zones—blending Waterfall milestone gating for hardware procurement with Agile sprint iterations for software, hands-on QA verification, and brand guidance.',
     architectureFlow: [
-      'Cross-Cultural Discovery & Stakeholder Alignment (La Mia Mamma, Primitivo, Little Italy, Little Sicily)',
+      'Cross-Cultural Discovery & Stakeholder Alignment (La Mia Mamma, Limoncello, Little Italy, Little Sicily)',
       'Cloud & DNS Provisioning (Hostinger Cloud Professional + Custom UK Domains)',
       'Multi-Disciplinary Team Leadership (Agile Sprints, Ideation Workshops & QA Sign-Offs)',
       'Executive Account Governance & Proactive Operational Reviews',
@@ -243,12 +243,12 @@ export const CASE_STUDIES: CaseStudy[] = [
     index: '04',
     title: 'Retail Intelligence & EdTech Systems',
     subtitle: 'Interdisciplinary Engineering, Data Visualization & Digital Forensics',
-    client: 'BUFT (formerly BSMRDU) · Engineering Research',
+    client: 'UFTB (formerly BSMRDU) · Engineering Research',
     location: 'Bangladesh',
     year: '2019 — 2024',
     persona: 'pm',
     headlineMetric: '3.40',
-    headlineMetricLabel: 'B.Engg. CGPA (5.00 HSC)',
+    headlineMetricLabel: 'B.Engg. CGPA (5/5 GPA w/ Scholarship in A & O-Level Equiv.)',
     secondaryMetrics: [
       { value: 'Python', label: 'Pandas & Plotly Engine' },
       { value: 'Autopsy', label: 'Digital Forensics' },
@@ -266,11 +266,11 @@ export const CASE_STUDIES: CaseStudy[] = [
       'Strategic Business & Pedagogical Synthesis',
     ],
     outcomes: [
-      'Graduated with a 3.40 CGPA in B.Engg. (following a perfect 5.00 GPA in HSC Science at Chittagong College).',
+      'Graduated with a 3.40 CGPA in B.Engg. (following perfect 5.00/5.00 GPAs with Government Scholarships in both A-Level & O-Level equivalents at Chittagong Collegiate School and Chittagong College).',
       'Developed analytical fluency bridging raw code/data and executive decision-making.',
       'Applied instructional clarity from 5+ years tutoring at AB’s Edulab directly to technical team mentorship.',
     ],
-    stack: ['Python (Pandas, Plotly)', 'VS Code & Windsurf', 'Digital Forensic Tools', 'Diverse AI Tools', 'SQL'],
+    stack: ['Python (Pandas, Plotly)', 'VS Code & Windsurf', 'Digital Forensic Tools', 'Agentic AI Systems', 'Frontier LLMs (Gemini, Claude, Antigravity, Kimi)'],
   },
 ];
 
@@ -280,7 +280,7 @@ export const CAREER_TIMELINE: CareerMilestone[] = [
     role: 'Business Relationship Manager',
     company: 'CompileQ',
     period: 'Mar 2024 — Present',
-    location: 'London, UK (Remote from Chattogram)',
+    location: 'London, UK (Remote)',
     persona: 'brm',
     highlightMetric: '+50% Client Retention · +25% HR Retention',
     summary:
@@ -331,7 +331,7 @@ export const CAREER_TIMELINE: CareerMilestone[] = [
     role: 'Tutor (English and Science)',
     company: "AB's Edulab",
     period: 'Jan 2017 — Aug 2022',
-    location: 'Chattogram, Bangladesh',
+    location: 'Dhaka & Chattogram, Bangladesh',
     persona: 'both',
     highlightMetric: '5+ Years Mentorship & Coaching',
     summary:
@@ -381,23 +381,24 @@ export const VERIFIED_CREDENTIALS = [
 export const EDUCATION_RECORDS = [
   {
     degree: 'B. Engg. in Educational Technology and Engineering',
-    institution: 'Bangladesh University of Frontier Technology (formerly BSMRDU)',
+    institution: 'University of Frontier Technology Bangladesh (formerly BSMRDU)',
     score: 'CGPA 3.40 / 4.00',
     detail:
-      'Interdisciplinary engineering degree integrating Software & Web Systems, Business Strategy, Data Analytics, Cloud Computing, and Psychological/Educational Methodologies for the 4th Industrial Revolution.',
+      'Interdisciplinary engineering degree integrating Software & Web Systems, Business Strategy, Data Analytics, and Psychological/Educational Methodologies for the 4th Industrial Revolution.',
   },
   {
-    degree: 'Higher Secondary Certificate (HSC) — Science',
-    institution: 'Chittagong College · Chattogram Board',
-    score: 'GPA 5.00 / 5.00',
-    detail: 'Graduated with highest distinction (Golden 5.00) in Science from one of Bangladesh’s premier institutions.',
-  },
-  {
-    degree: 'Executive & Cloud Continuous Learning (2022 — 2026)',
-    institution: 'Coursera · Wadhwani · AWS · Apollo · edX',
-    score: 'Multi-Domain',
+    degree: 'HSC & SSC (A-Level & O-Level Equivalent) — Science',
+    institution: 'Chittagong Collegiate School & Chittagong College',
+    score: 'Golden GPA 5.00 / 5.00 · Scholarship',
     detail:
-      'Specialized professional training across Leadership, Negotiation, Design, Marketing, AI, Cloud Technologies, Project Management, and International Business.',
+      'Achieved perfect Golden GPA 5.00 / 5.00 in both O-Level (SSC) and A-Level (HSC) equivalents with Government Scholarship distinction across Chittagong Collegiate School and Chittagong College.',
+  },
+  {
+    degree: 'Executive, Business & IT Continuous Learning (2022 — 2026)',
+    institution: 'Coursera · Wadhwani · Apollo · edX',
+    score: 'Business, Executive & IT',
+    detail:
+      'Specialized professional executive training across Leadership, Strategic Negotiation, Cross-Cultural Management, AI Tools, Project Management, and Global Business Strategy.',
   },
 ];
 
@@ -417,10 +418,11 @@ export const SKILL_CLUSTERS = {
     'Documentation & Compliance Monitoring',
   ],
   techStack: [
+    'Agentic AI Systems',
+    'Frontier LLMs (Gemini, Claude, Antigravity, Kimi)',
     'ClickUp',
     'Jira',
     'Canva',
-    'Diverse AI Tools',
     'Digital Forensic Tools',
     'VS Code & Windsurf',
     'WordPress',
@@ -438,7 +440,7 @@ export const AI_BRIEF_PROMPTS = [
   },
   {
     q: 'What is Abrar’s real-world UK client & operations experience?',
-    a: 'Operating across the Chattogram ↔ London E1 corridor (CompileQ & Qamla Ltd at 129 Mile End Rd), Abrar has scoped commercial quotes, managed Hostinger/DNS & WordPress infrastructure, and led Automation360° EPOS/KDS rollouts for London hospitality brands including La Mia Mamma (Chelsea), Primitivo (Leicester Sq), Little Italy (Soho), and Little Sicily.',
+    a: 'Operating across the Chattogram ↔ London E1 corridor (CompileQ & Qamla Ltd at 129 Mile End Rd), Abrar has scoped commercial quotes, managed Hostinger/DNS & WordPress infrastructure, and led Automation360° EPOS/KDS rollouts for London hospitality brands including La Mia Mamma (Chelsea), Limoncello (Leicester Sq), Little Italy (Soho), and Little Sicily.',
   },
   {
     q: 'What tools and technical stack does Abrar command daily?',

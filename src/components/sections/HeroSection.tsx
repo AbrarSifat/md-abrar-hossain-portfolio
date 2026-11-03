@@ -63,7 +63,7 @@ export const HeroSection: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.36 }}
             className="mt-8 max-w-lg text-[15px] font-light leading-[1.75] text-ink-muted sm:text-base"
           >
-            Leading UK B2B client partnerships, Automation360° hospitality ecosystems, and cross-functional delivery at CompileQ across London and Chattogram.
+            Leading UK B2B client partnerships, Automation360° hospitality ecosystems, and cross-functional delivery across the United Kingdom and Bangladesh for both CompileQ and Qamla.
           </motion.p>
 
           <motion.div
@@ -125,7 +125,7 @@ export const HeroSection: React.FC = () => {
               Operating Corridor
             </span>
             <span className="mt-1 block text-xs font-normal text-ink-secondary">
-              London E1 ↔ Chattogram
+              Across the Globe
             </span>
           </div>
           <div>
@@ -133,7 +133,7 @@ export const HeroSection: React.FC = () => {
               Academic Pedigree
             </span>
             <span className="mt-1 block text-xs font-normal text-ink-secondary">
-              B.Engg. — BUFT (3.40)
+              B.Engg. — UFTB (3.4)
             </span>
           </div>
           <div>
@@ -141,8 +141,8 @@ export const HeroSection: React.FC = () => {
               Status
             </span>
             <span className="mt-1 inline-flex items-center gap-2 text-xs font-normal text-alabaster">
-              <span className="h-1.5 w-1.5 rounded-full bg-sand" />
-              Available for Leadership
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500/80 animate-pulse" />
+              Open to Work
             </span>
           </div>
         </div>

@@ -77,7 +77,7 @@ export default function OpenGraphImage() {
           }}
         >
           <span>+50% Client Retention · +50% Delivery Efficiency · +25% HR Retention</span>
-          <span style={{ color: '#C8B89A' }}>B.Engg. · BUFT</span>
+          <span style={{ color: '#C8B89A' }}>B.Engg. · UFTB</span>
         </div>
       </div>
     ),

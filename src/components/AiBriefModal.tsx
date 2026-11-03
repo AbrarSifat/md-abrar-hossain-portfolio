@@ -27,13 +27,13 @@ export const AiBriefModal: React.FC<AiBriefModalProps> = ({ open, onOpenChange }
       return 'Reach Md. Abrar Hossain directly at abrarsifat47@gmail.com, via WhatsApp / Phone at +880 1627218950, or on LinkedIn (linkedin.com/in/abrarsifat47/). Available for global Business Relationship Manager, Technical PM, and Operations Leadership mandates.';
     }
     if (q.includes('uk') || q.includes('london') || q.includes('hospitality') || q.includes('automation') || q.includes('compileq')) {
-      return 'At CompileQ & Qamla Ltd (129 Mile End Rd, London E1), Abrar architected commercial quoting, DNS/Hostinger infrastructure, and Automation360° EPOS/KDS deployments across Chelsea, Soho, Leicester Square, and Westminster (La Mia Mamma, Primitivo, Little Italy, Little Sicily)—driving +50% client satisfaction & retention.';
+      return 'At CompileQ & Qamla Ltd (129 Mile End Rd, London E1), Abrar architected commercial quoting, DNS/Hostinger infrastructure, and Automation360° EPOS/KDS deployments across Chelsea, Soho, Leicester Square, and Westminster (La Mia Mamma, Limoncello, Little Italy, Little Sicily)—driving +50% client satisfaction & retention.';
     }
-    if (q.includes('education') || q.includes('degree') || q.includes('university') || q.includes('buft') || q.includes('cgpa')) {
-      return 'Abrar holds a B.Engg. in Educational Technology and Engineering from Bangladesh University of Frontier Technology (formerly BSMRDU) with a 3.40 CGPA, preceded by a 5.00 GPA in HSC Science from Chittagong College.';
+    if (q.includes('education') || q.includes('degree') || q.includes('university') || q.includes('uftb') || q.includes('cgpa')) {
+      return 'Abrar holds a B.Engg. in Educational Technology and Engineering from University of Frontier Technology Bangladesh (UFTB, formerly BSMRDU) with a 3.40 CGPA, preceded by a 5.00 GPA in HSC Science from Chittagong College.';
     }
     if (q.includes('python') || q.includes('tech') || q.includes('tool') || q.includes('jira') || q.includes('clickup') || q.includes('stack')) {
-      return 'Daily stack: Jira, ClickUp, Hostinger Ecosystem, WordPress, VS Code & Windsurf, Python (Pandas & Plotly), Digital Forensic Tools, AI Workflows, Canva, Google Workspace, and Microsoft Suite.';
+      return 'Daily stack: Agentic AI Systems, Frontier LLMs (Gemini, Claude, Antigravity, Kimi), Jira, ClickUp, Hostinger Ecosystem, WordPress, VS Code & Windsurf, Python (Pandas & Plotly), Digital Forensic Tools, Canva, Google Workspace, and Microsoft Suite.';
     }
     if (q.includes('cert') || q.includes('coursera') || q.includes('uc davis') || q.includes('wadhwani')) {
       return 'Verified credentials: UC Davis ("Cross-Cultural Communication and Management", ID: HY13BEC60ZDW), University of London ("Professional Skills for International Business", ID: 9BNL06SKI0UC), and Wadhwani Foundation ("Employability and Soft Skill Certification — Ready to Rise!", Oct 2023).';
@@ -61,7 +61,7 @@ export const AiBriefModal: React.FC<AiBriefModalProps> = ({ open, onOpenChange }
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Query UK accounts, Jira/Python stack, BUFT degree, or contact..."
+              placeholder="Query UK accounts, Jira/Python stack, UFTB degree, or contact..."
               className="w-full border border-alabaster/[0.14] bg-transparent py-3 pl-10 pr-4 text-sm font-light text-alabaster placeholder:text-ink-faint focus:border-alabaster/50 focus:outline-none"
             />
           </div>
