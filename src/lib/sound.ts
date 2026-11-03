@@ -256,7 +256,7 @@ class LeicaSoundEngine {
         filter.Q.setValueAtTime(3.4, now);
 
         const noiseGain = this.ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.075, now);
+        noiseGain.gain.setValueAtTime(0.056, now);
         noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.009);
 
         noise.connect(filter);
@@ -272,7 +272,7 @@ class LeicaSoundEngine {
       osc.frequency.setValueAtTime(340, now);
       osc.frequency.exponentialRampToValueAtTime(65, now + 0.028);
 
-      oscGain.gain.setValueAtTime(0.075, now);
+      oscGain.gain.setValueAtTime(0.056, now);
       oscGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.028);
 
       osc.connect(oscGain);
@@ -287,7 +287,7 @@ class LeicaSoundEngine {
       catchOsc.frequency.setValueAtTime(480, now + 0.014);
       catchOsc.frequency.exponentialRampToValueAtTime(120, now + 0.026);
 
-      catchGain.gain.setValueAtTime(0.055, now + 0.014);
+      catchGain.gain.setValueAtTime(0.041, now + 0.014);
       catchGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.026);
 
       catchOsc.connect(catchGain);
@@ -313,14 +313,14 @@ class LeicaSoundEngine {
       const now = this.ctx.currentTime;
       const jitter = (Math.random() - 0.5) * 45;
 
-      // Component 1: High metallic ball snap transient
+      // Component 1: High metallic ball snap transient (decreased by 25%)
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(2850 + jitter, now);
       osc.frequency.exponentialRampToValueAtTime(1420 + jitter, now + 0.012);
 
-      gain.gain.setValueAtTime(0.11, now);
+      gain.gain.setValueAtTime(0.0825, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
 
       osc.connect(gain);
@@ -328,7 +328,7 @@ class LeicaSoundEngine {
       osc.start(now);
       osc.stop(now + 0.012);
 
-      // Component 2: Spring-loaded bearing notch strike (tactile mechanical friction)
+      // Component 2: Spring-loaded bearing notch strike (decreased by 25%)
       const noiseBuf = this.createNoiseBuffer(0.007);
       if (noiseBuf) {
         const noise = this.ctx.createBufferSource();
@@ -339,7 +339,7 @@ class LeicaSoundEngine {
         filter.Q.setValueAtTime(3.6, now);
 
         const noiseGain = this.ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.08, now);
+        noiseGain.gain.setValueAtTime(0.06, now);
         noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.007);
 
         noise.connect(filter);
@@ -348,14 +348,14 @@ class LeicaSoundEngine {
         noise.start(now);
       }
 
-      // Component 3: Solid machined brass chassis resonance
+      // Component 3: Solid machined brass chassis resonance (decreased by 25%)
       const body = this.ctx.createOscillator();
       const bodyGain = this.ctx.createGain();
       body.type = 'sine';
       body.frequency.setValueAtTime(740 + jitter * 0.5, now);
       body.frequency.exponentialRampToValueAtTime(320, now + 0.018);
 
-      bodyGain.gain.setValueAtTime(0.085, now);
+      bodyGain.gain.setValueAtTime(0.064, now);
       bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.018);
 
       body.connect(bodyGain);
@@ -380,7 +380,7 @@ class LeicaSoundEngine {
   /**
    * 3. Precision Film Advance Ratchet / Knurled Focus Ring Detent (Scroll Tick)
    * Ultra-soft, whisper-quiet micro detent specifically engineered for continuous scrolling.
-   * Decreased by 25% for a subtle, silky acoustic texture.
+   * Increased by 15% for optimal tactile presence.
    */
   public playScrollTick(velocity: number = 1) {
     if (!this.enabled) return;
@@ -396,8 +396,8 @@ class LeicaSoundEngine {
       const now = this.ctx.currentTime;
       const jitter = (Math.random() - 0.5) * 50;
       const normalizedVel = Math.min(2.5, Math.max(0.6, Math.abs(velocity)));
-      // Decreased by 25% (from 0.012 to 0.009)
-      const vol = 0.009 * normalizedVel;
+      // Increased by 15% (from 0.009 to 0.01035)
+      const vol = 0.01035 * normalizedVel;
 
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
