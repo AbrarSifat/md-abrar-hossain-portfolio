@@ -266,9 +266,14 @@ function MinimalistSculpture({
 
   const palette = isLight
     ? {
-        coreColor: '#E9E5DC',
-        coreRoughness: 0.55,
-        wireColor: '#B8A88E',
+        coreColor: '#EAE5DC',
+        coreRoughness: 0.6,
+        landDotColor: '#2C261F',
+        landDotOpacity: 0.92,
+        landDotSize: 0.015,
+        oceanDotColor: '#ABA090',
+        oceanDotOpacity: 0.22,
+        oceanDotSize: 0.0075,
         originCore: '#D89A38',
         originBeacon: '#C88828',
         hubCore: '#222225',
@@ -282,7 +287,12 @@ function MinimalistSculpture({
     : {
         coreColor: '#070709',
         coreRoughness: 0.35,
-        wireColor: '#C8B89A',
+        landDotColor: '#E2D4B7',
+        landDotOpacity: 0.78,
+        landDotSize: 0.0125,
+        oceanDotColor: '#6E6455',
+        oceanDotOpacity: 0.18,
+        oceanDotSize: 0.007,
         originCore: '#F2D272',
         originBeacon: '#E5C77B',
         hubCore: '#F4F3EF',
@@ -318,10 +328,10 @@ function MinimalistSculpture({
             />
           </bufferGeometry>
           <pointsMaterial
-            size={0.012}
-            color={palette.wireColor}
+            size={palette.landDotSize}
+            color={palette.landDotColor}
             transparent
-            opacity={isLight ? 0.55 : 0.65}
+            opacity={palette.landDotOpacity}
             sizeAttenuation
             depthWrite={false}
           />
@@ -336,10 +346,10 @@ function MinimalistSculpture({
             />
           </bufferGeometry>
           <pointsMaterial
-            size={0.007}
-            color={palette.wireColor}
+            size={palette.oceanDotSize}
+            color={palette.oceanDotColor}
             transparent
-            opacity={isLight ? 0.12 : 0.15}
+            opacity={palette.oceanDotOpacity}
             sizeAttenuation
             depthWrite={false}
           />
