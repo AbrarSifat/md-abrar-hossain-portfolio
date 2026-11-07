@@ -370,6 +370,17 @@ export const VERIFIED_CREDENTIALS: VerifiedCredential[] = [
     image: '/certificates/uc-davis.png',
   },
   {
+    id: 'vanderbilt-agentic-ai',
+    title: 'Agentic AI and AI Agents: A Primer for Leaders',
+    issuer: 'Vanderbilt University · Coursera',
+    date: 'Nov 5, 2026',
+    credentialId: 'ID F0EO14IJZH2P',
+    skills: 'Agentic Automation · Agentic Workflows · Intelligent Agent Architecture',
+    verifyUrl: 'https://www.coursera.org/account/accomplishments/verify/F0EO14IJZH2P',
+    badge: 'Verified Credential',
+    image: '/certificates/vanderbilt-agentic-ai.jpg',
+  },
+  {
     id: 'u-london',
     title: 'Professional Skills for International Business',
     issuer: 'University of London · Coursera',

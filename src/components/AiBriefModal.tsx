@@ -45,8 +45,8 @@ export const AiBriefModal: React.FC<AiBriefModalProps> = ({ open, onOpenChange }
     if (q.includes('python') || q.includes('tech') || q.includes('tool') || q.includes('jira') || q.includes('clickup') || q.includes('stack')) {
       return 'Daily stack: Agentic AI Systems, Frontier LLMs (Gemini, Claude, Antigravity, Kimi), Jira, ClickUp, Hostinger Ecosystem, WordPress, VS Code & Windsurf, Python (Pandas & Plotly), Digital Forensic Tools, Canva, Google Workspace, and Microsoft Suite.';
     }
-    if (q.includes('cert') || q.includes('coursera') || q.includes('uc davis') || q.includes('wadhwani')) {
-      return 'Verified credentials: UC Davis ("Cross-Cultural Communication and Management", ID: HY13BEC60ZDW), University of London ("Professional Skills for International Business", ID: 9BNL06SKI0UC), and Wadhwani Foundation ("Employability and Soft Skill Certification — Ready to Rise!", Oct 2023).';
+    if (q.includes('cert') || q.includes('coursera') || q.includes('uc davis') || q.includes('vanderbilt') || q.includes('wadhwani')) {
+      return 'Verified credentials: UC Davis ("Cross-Cultural Communication and Management", ID: HY13BEC60ZDW), Vanderbilt University ("Agentic AI and AI Agents: A Primer for Leaders", ID: F0EO14IJZH2P), University of London ("Professional Skills for International Business", ID: 9BNL06SKI0UC), and Wadhwani Foundation ("Employability and Soft Skill Certification — Ready to Rise!", Oct 2023).';
     }
     return 'Md. Abrar Hossain pairs B.Engg. technical fluency with UK B2B commercial leadership at CompileQ (+50% client retention, +50% delivery efficiency, +25% HR retention). Select a prompt below or query UK accounts, stack, education, or contact.';
   }, [query]);
