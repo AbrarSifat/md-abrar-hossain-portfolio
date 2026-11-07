@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
+import { VERIFIED_CREDENTIALS } from '@/data/portfolio';
 
 interface MacGeniePreviewProps {
   imageSrc: string | null;
@@ -8,11 +9,7 @@ interface MacGeniePreviewProps {
   rowCenterY: number | null;
 }
 
-const PRELOAD_IMAGES = [
-  '/certificates/uc-davis.png',
-  '/certificates/university-of-london.jpg',
-  '/certificates/wadhwani-foundation.png',
-];
+const PRELOAD_IMAGES = VERIFIED_CREDENTIALS.map((cred) => cred.image);
 
 export const MacGeniePreview: React.FC<MacGeniePreviewProps> = ({
   imageSrc,
@@ -76,6 +73,14 @@ export const MacGeniePreview: React.FC<MacGeniePreviewProps> = ({
 
     if (imageSrc) {
       currentImageSrcRef.current = imageSrc;
+      if (!imageCacheRef.current.has(imageSrc)) {
+        const img = new Image();
+        img.src = imageSrc;
+        img.onload = () => {
+          imageCacheRef.current.set(imageSrc, img);
+        };
+        imageCacheRef.current.set(imageSrc, img);
+      }
     }
 
     const OPEN_DURATION = 360; // ms
