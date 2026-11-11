@@ -12,6 +12,13 @@ export const Preloader: React.FC<{ onComplete: () => void }> = ({ onComplete }) 
     const start = performance.now();
     const duration = 700;
 
+    // Guaranteed failsafe timer so preloader never hangs under background tab/low-power mode
+    const safetyTimer = setTimeout(() => {
+      setProgress(100);
+      setDone(true);
+      onComplete();
+    }, 1200);
+
     const tick = (now: number) => {
       const pct = Math.min(100, Math.round(((now - start) / duration) * 100));
       setProgress(pct);
@@ -20,13 +27,16 @@ export const Preloader: React.FC<{ onComplete: () => void }> = ({ onComplete }) 
       } else {
         setTimeout(() => {
           setDone(true);
-          setTimeout(onComplete, 500);
+          setTimeout(onComplete, 400);
         }, 100);
       }
     };
 
     frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(safetyTimer);
+    };
   }, [onComplete]);
 
   return (

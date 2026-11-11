@@ -501,7 +501,7 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
       <Canvas
         camera={{ position: [0, 0.02, 5.15], fov: 39 }}
         dpr={[1, 2]}
-        gl={{ antialias: true, alpha: true, powerPreference: 'high-performance' }}
+        gl={{ antialias: true, alpha: true, powerPreference: 'default' }}
       >
         <ambientLight intensity={isLight ? 1.15 : 0.55} />
         <directionalLight

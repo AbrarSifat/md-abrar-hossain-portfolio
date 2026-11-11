@@ -421,10 +421,10 @@ export const EDUCATION_RECORDS = [
   },
   {
     degree: 'Executive, Business & IT Continuous Learning (2022 — 2026)',
-    institution: 'Coursera · Wadhwani · Apollo · edX',
+    institution: 'Coursera · Wadhwani · AWS Academy · edX',
     score: 'Business, Executive & IT',
     detail:
-      'Specialized professional executive training across Leadership, Strategic Negotiation, Cross-Cultural Management, AI Tools, Project Management, and Global Business Strategy.',
+      'Specialized professional executive training across Leadership, Strategic Negotiation, Cross-Cultural Management, AI Tools, Cloud Foundations (AWS Academy Graduate), Project Management, and Global Business Strategy.',
   },
 ];
 
@@ -433,6 +433,7 @@ export const SKILL_CLUSTERS = {
     'Stakeholder & Client Relationship Mgmt',
     'Project Management',
     'Strategic Planning',
+    'Talent Acquisition',
     'Risk Management',
     'Budgeting, Cost Control & Resource Allocation',
     'Competitive & Business Analysis',
