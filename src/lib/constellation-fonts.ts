@@ -31,7 +31,6 @@ export type ConstellationScript =
 
 const notoGreek = Noto_Serif({
   subsets: ['greek'],
-  weight: ['400', '500', '600'],
   variable: '--font-c-greek',
   display: 'swap',
   preload: false,
@@ -47,7 +46,6 @@ const amiri = Amiri({
 
 const notoBengali = Noto_Serif_Bengali({
   subsets: ['bengali'],
-  weight: ['400', '500', '600'],
   variable: '--font-c-bengali',
   display: 'swap',
   preload: false,
@@ -55,28 +53,24 @@ const notoBengali = Noto_Serif_Bengali({
 
 const notoDevanagari = Noto_Serif_Devanagari({
   subsets: ['devanagari'],
-  weight: ['400', '500', '600'],
   variable: '--font-c-devanagari',
   display: 'swap',
   preload: false,
 });
 
 const notoJP = Noto_Serif_JP({
-  weight: ['400', '500', '600'],
   variable: '--font-c-jp',
   display: 'swap',
   preload: false,
 });
 
 const notoSC = Noto_Serif_SC({
-  weight: ['400', '500', '600'],
   variable: '--font-c-sc',
   display: 'swap',
   preload: false,
 });
 
 const notoKR = Noto_Serif_KR({
-  weight: ['400', '500', '600'],
   variable: '--font-c-kr',
   display: 'swap',
   preload: false,
@@ -84,7 +78,6 @@ const notoKR = Noto_Serif_KR({
 
 const notoTamil = Noto_Serif_Tamil({
   subsets: ['tamil'],
-  weight: ['400', '500', '600'],
   variable: '--font-c-tamil',
   display: 'swap',
   preload: false,
@@ -92,7 +85,6 @@ const notoTamil = Noto_Serif_Tamil({
 
 const notoTelugu = Noto_Serif_Telugu({
   subsets: ['telugu'],
-  weight: ['400', '500', '600'],
   variable: '--font-c-telugu',
   display: 'swap',
   preload: false,
@@ -100,7 +92,6 @@ const notoTelugu = Noto_Serif_Telugu({
 
 const notoThai = Noto_Serif_Thai({
   subsets: ['thai'],
-  weight: ['400', '500', '600'],
   variable: '--font-c-thai',
   display: 'swap',
   preload: false,
@@ -108,7 +99,6 @@ const notoThai = Noto_Serif_Thai({
 
 const notoHebrew = Noto_Serif_Hebrew({
   subsets: ['hebrew'],
-  weight: ['400', '500', '600'],
   variable: '--font-c-hebrew',
   display: 'swap',
   preload: false,
@@ -116,7 +106,6 @@ const notoHebrew = Noto_Serif_Hebrew({
 
 const notoEthiopic = Noto_Serif_Ethiopic({
   subsets: ['ethiopic'],
-  weight: ['400', '500', '600'],
   variable: '--font-c-ethiopic',
   display: 'swap',
   preload: false,
