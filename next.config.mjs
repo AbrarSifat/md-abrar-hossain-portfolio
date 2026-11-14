@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  devIndicators: false,
   ...(process.env.VERCEL ? {} : { outputFileTracingRoot: import.meta.dirname }),
   poweredByHeader: false,
   compress: true,

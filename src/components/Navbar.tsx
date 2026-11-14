@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { Volume1, Volume2, VolumeX, X } from 'lucide-react';
+import { Volume1, Volume2, VolumeX, X, Menu } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { sounds } from '@/lib/sound';
 
@@ -25,6 +25,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [volumePercent, setVolumePercent] = useState(50);
   const [isHovered, setIsHovered] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastSliderTickRef = useRef<number>(0);
 
@@ -62,6 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
   };
 
   const handleVolumeButtonClick = () => {
+    setMobileMenuOpen(false);
     if (!isHovered) {
       setIsHovered(true);
     } else {
@@ -78,6 +80,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     e.preventDefault();
     sounds.playApertureClick();
+    setMobileMenuOpen(false);
     document.querySelector(href)?.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -261,6 +264,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
               type="button"
               onClick={() => {
                 sounds.playLensMount();
+                setMobileMenuOpen(false);
                 onOpenAiBrief();
               }}
               className="inline-flex h-7 items-center gap-1.5 sm:gap-2 border border-alabaster/[0.14] px-2.5 sm:px-3 font-mono text-[10px] uppercase tracking-[0.16em] text-ink-secondary transition-colors duration-300 hover:border-alabaster/50 hover:text-alabaster focus:outline-none shrink-0"
@@ -269,8 +273,63 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAiBrief }) => {
               <span>Brief</span>
               <span className="text-ink-subtle hidden sm:inline">⌘K</span>
             </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                sounds.playApertureClick();
+                setIsHovered(false);
+                setMobileMenuOpen((prev) => !prev);
+              }}
+              className="inline-flex md:hidden h-7 w-7 items-center justify-center border border-alabaster/[0.14] text-ink-secondary transition-colors duration-200 hover:border-alabaster/50 hover:text-alabaster focus:outline-none shrink-0"
+              aria-label={mobileMenuOpen ? 'Close Navigation Menu' : 'Open Navigation Menu'}
+              aria-expanded={mobileMenuOpen}
+            >
+              {mobileMenuOpen ? <X className="h-3.5 w-3.5" /> : <Menu className="h-3.5 w-3.5" />}
+            </button>
           </div>
         </nav>
+
+        {/* Mobile Quick Navigation Drawer */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <>
+              <motion.div
+                key="mobile-nav-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.16 }}
+                className="fixed inset-0 top-16 z-40 bg-black/55 backdrop-blur-sm md:hidden"
+                onClick={() => setMobileMenuOpen(false)}
+              />
+              <motion.div
+                key="mobile-nav-panel"
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                className="relative z-50 border-t border-alabaster/[0.08] bg-void/95 px-4 py-4 backdrop-blur-2xl md:hidden"
+              >
+                <div className="grid grid-cols-2 gap-2">
+                  {NAV_ITEMS.map((item, idx) => (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      onClick={(e) => scrollToSection(e, item.href)}
+                      className="flex items-center justify-between rounded-lg border border-alabaster/[0.08] bg-obsidian/50 px-3 py-2.5 text-xs text-ink-secondary transition-colors active:border-sand/50 active:bg-sand/10 hover:text-alabaster"
+                    >
+                      <span>{item.label}</span>
+                      <span className="font-mono text-[9px] text-sand/70">
+                        0{idx + 1}
+                      </span>
+                    </a>
+                  ))}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </header>
     </>
   );

@@ -23,7 +23,7 @@ export const FooterSection: React.FC = () => {
   return (
     <footer
       id="contact"
-      className="border-t border-alabaster/[0.08] bg-void pt-20 pb-12 sm:pt-28 lg:pt-36 transition-colors duration-500"
+      className="border-t border-alabaster/[0.08] bg-void pt-16 pb-10 sm:pt-28 sm:pb-12 lg:pt-36 transition-colors duration-500"
     >
       <div className="mx-auto max-w-[1360px] px-4 sm:px-6 lg:px-12">
         <motion.div
@@ -48,31 +48,31 @@ export const FooterSection: React.FC = () => {
           </p>
 
           {/* Monumental Understated Email Copy Trigger */}
-          <div className="mt-10 sm:mt-12 max-w-full overflow-hidden">
+          <div className="mt-8 sm:mt-12 max-w-full overflow-hidden">
             <button
               type="button"
               onClick={handleCopyEmail}
               data-cursor="COPY"
-              className="group inline-flex flex-wrap items-baseline gap-4 border-b border-alabaster/[0.18] pb-3 text-left transition-colors hover:border-alabaster focus:outline-none max-w-full"
+              className="group inline-flex flex-wrap items-baseline gap-2.5 sm:gap-4 border-b border-alabaster/[0.18] pb-3 text-left transition-colors hover:border-alabaster focus:outline-none max-w-full"
             >
-              <span className="text-xl sm:text-3xl md:text-4xl font-light tracking-[-0.02em] text-alabaster break-all sm:break-normal">
+              <span className="text-[19px] sm:text-3xl md:text-4xl font-light tracking-[-0.02em] text-alabaster break-all sm:break-normal">
                 {email}
               </span>
-              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-ink-subtle transition-colors group-hover:text-sand-light">
+              <span className="inline-flex items-center gap-1.5 font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-ink-subtle transition-colors group-hover:text-sand-light">
                 {copied ? (
                   <>
                     <Check className="h-3.5 w-3.5 text-sand" />
                     Copied to clipboard
                   </>
                 ) : (
-                  'Click to copy'
+                  'Tap to copy'
                 )}
               </span>
             </button>
           </div>
 
           {/* Direct Links */}
-          <div className="mt-12 flex flex-wrap items-center gap-x-10 gap-y-4 font-mono text-xs uppercase tracking-[0.16em] text-ink-muted">
+          <div className="mt-9 sm:mt-12 flex flex-wrap items-center gap-x-6 gap-y-3 sm:gap-x-10 sm:gap-y-4 font-mono text-xs uppercase tracking-[0.16em] text-ink-muted">
             <a
               href="https://www.linkedin.com/in/abrarsifat47/"
               target="_blank"
@@ -108,7 +108,7 @@ export const FooterSection: React.FC = () => {
         </motion.div>
 
         {/* Minimal Colophon */}
-        <div className="mt-24 flex flex-col justify-between gap-4 border-t border-alabaster/[0.08] pt-8 font-mono text-[11px] text-ink-faint sm:flex-row sm:items-center">
+        <div className="mt-14 sm:mt-24 flex flex-col justify-between gap-3 sm:gap-4 border-t border-alabaster/[0.08] pt-8 font-mono text-[11px] text-ink-faint sm:flex-row sm:items-center">
           <span>© {new Date().getFullYear()} Md. Abrar Hossain</span>
           <span>Chattogram, BD · London E1, UK</span>
         </div>

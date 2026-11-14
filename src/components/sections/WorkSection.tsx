@@ -33,9 +33,9 @@ export const WorkSection: React.FC = () => {
       {/* 02 — Selected Works */}
       <section
         id="work"
-        className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-4 sm:px-6 py-20 sm:py-28 lg:py-36 lg:px-12"
+        className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-4 sm:px-6 py-14 sm:py-28 lg:py-36 lg:px-12"
       >
-        <div className="flex flex-col justify-between gap-8 pb-14 lg:flex-row lg:items-end">
+        <div className="flex flex-col justify-between gap-6 sm:gap-8 pb-8 sm:pb-14 lg:flex-row lg:items-end">
           <div>
             <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-subtle">
               02 — Selected Works
@@ -75,18 +75,18 @@ export const WorkSection: React.FC = () => {
               type="button"
               data-cursor="VIEW"
               onMouseEnter={() => {
-                sounds.playScrollTick();
-                setHoveredStudy(study);
+                if (window.matchMedia('(hover: hover)').matches) sounds.playScrollTick();
+                if (window.matchMedia('(hover: hover)').matches) setHoveredStudy(study);
               }}
               onClick={() => {
                 sounds.playLensMount();
-                setActiveStudy(study);
+                setHoveredStudy(null); setActiveStudy(study);
               }}
               initial={{ opacity: 0, y: 16 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-40px' }}
               transition={{ duration: 0.55 }}
-              className="group grid w-full grid-cols-1 items-baseline gap-4 py-9 text-left transition-opacity duration-500 group-hover/list:opacity-35 hover:!opacity-100 md:grid-cols-12 md:gap-6 md:py-11 focus:outline-none"
+              className="group grid w-full grid-cols-1 items-baseline gap-3.5 sm:gap-4 py-7 sm:py-9 text-left transition-opacity duration-500 [@media(hover:hover)]:group-hover/list:opacity-35 [@media(hover:hover)]:hover:!opacity-100 md:grid-cols-12 md:gap-6 md:py-11 focus:outline-none"
             >
               <span className="font-mono text-xs text-ink-subtle md:col-span-1">
                 {study.index}
@@ -228,9 +228,9 @@ export const WorkSection: React.FC = () => {
                 </div>
 
                 {/* Hairline Metrics Strip */}
-                <div className="grid grid-cols-2 gap-6 border-b border-alabaster/[0.09] pb-8 sm:grid-cols-4">
+                <div className="grid grid-cols-2 gap-4 sm:gap-6 border-b border-alabaster/[0.09] pb-6 sm:pb-8 sm:grid-cols-4">
                   <div>
-                    <div className="text-2xl font-light tracking-tight text-sand-light">
+                    <div className="text-xl sm:text-2xl font-light tracking-tight text-sand-light">
                       {activeStudy.headlineMetric}
                     </div>
                     <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-subtle">
@@ -239,7 +239,7 @@ export const WorkSection: React.FC = () => {
                   </div>
                   {activeStudy.secondaryMetrics.map((m) => (
                     <div key={m.label}>
-                      <div className="text-2xl font-light tracking-tight text-alabaster">
+                      <div className="text-xl sm:text-2xl font-light tracking-tight text-alabaster">
                         {m.value}
                       </div>
                       <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-subtle">
@@ -326,9 +326,9 @@ export const WorkSection: React.FC = () => {
       {/* 03 — UK Corridor Footprint */}
       <section
         id="corridor"
-        className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-4 sm:px-6 py-20 sm:py-28 lg:py-36 lg:px-12"
+        className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-4 sm:px-6 py-14 sm:py-28 lg:py-36 lg:px-12"
       >
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
+        <div className="grid grid-cols-1 gap-8 sm:gap-12 lg:grid-cols-12 lg:gap-16">
           <div className="lg:col-span-4">
             <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-subtle">
               03 — London Corridor

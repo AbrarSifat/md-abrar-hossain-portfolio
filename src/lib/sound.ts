@@ -313,14 +313,14 @@ class LeicaSoundEngine {
       const now = this.ctx.currentTime;
       const jitter = (Math.random() - 0.5) * 45;
 
-      // Component 1: High metallic ball snap transient (decreased by 25%)
+      // Component 1: High metallic ball snap transient (refined -35% for quiet luxury tab selection)
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
       osc.type = 'triangle';
       osc.frequency.setValueAtTime(2850 + jitter, now);
       osc.frequency.exponentialRampToValueAtTime(1420 + jitter, now + 0.012);
 
-      gain.gain.setValueAtTime(0.0825, now);
+      gain.gain.setValueAtTime(0.054, now);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012);
 
       osc.connect(gain);
@@ -328,7 +328,7 @@ class LeicaSoundEngine {
       osc.start(now);
       osc.stop(now + 0.012);
 
-      // Component 2: Spring-loaded bearing notch strike (decreased by 25%)
+      // Component 2: Spring-loaded bearing notch strike (refined -35%)
       const noiseBuf = this.createNoiseBuffer(0.007);
       if (noiseBuf) {
         const noise = this.ctx.createBufferSource();
@@ -339,7 +339,7 @@ class LeicaSoundEngine {
         filter.Q.setValueAtTime(3.6, now);
 
         const noiseGain = this.ctx.createGain();
-        noiseGain.gain.setValueAtTime(0.06, now);
+        noiseGain.gain.setValueAtTime(0.039, now);
         noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.007);
 
         noise.connect(filter);
@@ -348,14 +348,14 @@ class LeicaSoundEngine {
         noise.start(now);
       }
 
-      // Component 3: Solid machined brass chassis resonance (decreased by 25%)
+      // Component 3: Solid machined brass chassis resonance (refined -35%)
       const body = this.ctx.createOscillator();
       const bodyGain = this.ctx.createGain();
       body.type = 'sine';
       body.frequency.setValueAtTime(740 + jitter * 0.5, now);
       body.frequency.exponentialRampToValueAtTime(320, now + 0.018);
 
-      bodyGain.gain.setValueAtTime(0.064, now);
+      bodyGain.gain.setValueAtTime(0.042, now);
       bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.018);
 
       body.connect(bodyGain);
@@ -556,6 +556,120 @@ class LeicaSoundEngine {
     } catch {
       // Audio gracefully suppressed
     }
+  }
+
+  /**
+   * 8. Basketball Flick Launch ("Whoosh + Leather Impulse")
+   */
+  public playBasketballLaunch() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(145, now);
+      osc.frequency.exponentialRampToValueAtTime(310, now + 0.09);
+      gain.gain.setValueAtTime(0.045, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.095);
+      osc.connect(gain);
+      gain.connect(this.destination);
+      osc.start(now);
+      osc.stop(now + 0.095);
+
+      const noise = this.createNoiseBuffer(0.08);
+      if (noise) {
+        const src = this.ctx.createBufferSource();
+        src.buffer = noise;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(900, now);
+        filter.frequency.exponentialRampToValueAtTime(2200, now + 0.08);
+        filter.Q.value = 2.2;
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.025, now);
+        nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.08);
+        src.connect(filter);
+        filter.connect(nGain);
+        nGain.connect(this.destination);
+        src.start(now);
+      }
+    } catch {}
+  }
+
+  /**
+   * 9. Basketball Net Swish + Golden Score Harmonic
+   */
+  public playBasketballSwish() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      // Crisp net friction swish
+      const noise = this.createNoiseBuffer(0.14);
+      if (noise) {
+        const src = this.ctx.createBufferSource();
+        src.buffer = noise;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(3200, now);
+        filter.frequency.exponentialRampToValueAtTime(1400, now + 0.14);
+        filter.Q.value = 1.8;
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.045, now);
+        nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+        src.connect(filter);
+        filter.connect(nGain);
+        nGain.connect(this.destination);
+        src.start(now);
+      }
+
+      // Warm ascending chord (E5 -> G#5 -> B5)
+      const freqs = [659.25, 830.61, 987.77];
+      freqs.forEach((f, idx) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sine';
+        const start = now + idx * 0.035;
+        osc.frequency.setValueAtTime(f, start);
+        g.gain.setValueAtTime(0.032, start);
+        g.gain.exponentialRampToValueAtTime(0.0001, start + 0.24);
+        osc.connect(g);
+        g.connect(this.destination);
+        osc.start(start);
+        osc.stop(start + 0.24);
+      });
+    } catch {}
+  }
+
+  /**
+   * 10. Basketball Rim Clank / Miss Acoustic
+   */
+  public playBasketballRimMiss() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(340, now);
+      osc.frequency.exponentialRampToValueAtTime(155, now + 0.14);
+      gain.gain.setValueAtTime(0.055, now);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.15);
+      osc.connect(gain);
+      gain.connect(this.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } catch {}
   }
 
   // Aliases for backward compatibility

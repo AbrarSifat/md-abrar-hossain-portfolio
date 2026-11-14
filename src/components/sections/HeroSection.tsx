@@ -20,20 +20,23 @@ const CorridorScene = dynamic(
   }
 );
 
+const HERO_CTA_CLASS =
+  'h-10 gap-1.5 px-3.5 text-[10px] tracking-[0.06em] max-[359px]:px-2.5 max-[359px]:text-[9.5px] max-[359px]:tracking-[0.04em] sm:h-12 sm:gap-2.5 sm:px-7 sm:text-xs sm:tracking-[0.14em]';
+
 export const HeroSection: React.FC = () => {
   return (
     <section
       id="top"
-      className="relative flex min-h-screen flex-col justify-between pt-24"
+      className="relative flex min-h-screen min-h-[100dvh] flex-col justify-between pt-20 sm:pt-24"
     >
       {/* Subtle Ambient Studio Falloff */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute right-0 top-1/4 h-[520px] w-[520px] rounded-full bg-sand/[0.05] blur-[160px]"
+        className="pointer-events-none absolute right-0 top-1/4 h-[300px] w-[300px] sm:h-[520px] sm:w-[520px] rounded-full bg-sand/[0.05] blur-[120px] sm:blur-[160px]"
       />
 
       {/* Main Asymmetric Stage */}
-      <div className="relative z-10 mx-auto grid w-full max-w-[1360px] flex-1 grid-cols-1 items-center gap-10 px-4 py-8 sm:gap-12 sm:px-6 sm:py-12 lg:grid-cols-12 lg:gap-8 lg:px-12">
+      <div className="relative z-10 mx-auto grid w-full max-w-[1360px] flex-1 grid-cols-1 items-center gap-6 px-4 py-6 sm:gap-12 sm:px-6 sm:py-12 lg:grid-cols-12 lg:gap-8 lg:px-12">
         {/* Left Editorial Typography */}
         <div className="relative z-20 lg:col-span-7">
           <motion.p
@@ -71,9 +74,9 @@ export const HeroSection: React.FC = () => {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.46 }}
-            className="mt-8 sm:mt-10 flex flex-wrap items-center gap-3 sm:gap-4"
+            className="mt-7 sm:mt-10 flex flex-nowrap items-center gap-2 sm:gap-4"
           >
-            <Button size="lg" asChild>
+            <Button size="lg" className={HERO_CTA_CLASS} asChild>
               <a
                 href="#work"
                 onClick={(e) => {
@@ -83,18 +86,18 @@ export const HeroSection: React.FC = () => {
                 }}
               >
                 <span>Selected Work</span>
-                <ArrowDown className="h-3.5 w-3.5" />
+                <ArrowDown className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
               </a>
             </Button>
 
-            <Button variant="outline" size="lg" asChild>
+            <Button variant="outline" size="lg" className={HERO_CTA_CLASS} asChild>
               <a
                 href="/Md_Abrar_Hossain_Resume.pdf"
                 download="Md_Abrar_Hossain_Resume.pdf"
                 onClick={() => sounds.playLeicaShutter()}
               >
                 <span>Curriculum Vitae</span>
-                <ArrowUpRight className="h-3.5 w-3.5" />
+                <ArrowUpRight className="h-3 w-3 shrink-0 sm:h-3.5 sm:w-3.5" />
               </a>
             </Button>
           </motion.div>
@@ -105,7 +108,7 @@ export const HeroSection: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, delay: 0.3 }}
-          className="relative z-10 h-[340px] w-full sm:h-[480px] lg:col-span-5 lg:h-[620px]"
+          className="relative z-10 h-[260px] w-full sm:h-[440px] lg:col-span-5 lg:h-[620px]"
         >
           <div className="absolute inset-y-0 inset-x-0 lg:-inset-x-12 xl:-inset-x-16">
             <WebGLErrorBoundary>

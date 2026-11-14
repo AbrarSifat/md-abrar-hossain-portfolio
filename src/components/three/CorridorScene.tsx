@@ -88,17 +88,67 @@ function buildArc(a: THREE.Vector3, b: THREE.Vector3, R: number) {
   return { curve, tube };
 }
 
+export type GamePhase =
+  | 'globe'
+  | 'ready_to_spin'
+  | 'spinning_transition'
+  | 'playing'
+  | 'game_over';
+
+interface ShotEvent {
+  id: number;
+  type: 'swish' | 'bank' | 'miss';
+  label: string;
+  sublabel: string;
+}
+
+interface CourtControlState {
+  ballX: number;
+  targetBallX: number;
+  aimVx: number;
+  isAiming: boolean;
+  isSwiping: boolean;
+  pendingThrow: { vx: number } | null;
+}
+
+interface GlobeSpinTracker {
+  active: boolean;
+  pointerId: number | null;
+  startX: number;
+  startY: number;
+  startTime: number;
+  samples: Array<{ x: number; y: number; t: number }>;
+  strokeRegisteredAt: number;
+  strokeDirX: number;
+  strokeDirY: number;
+  fastSpinCount: number;
+  lastFastSpinAt: number;
+}
+
 function MinimalistSculpture({
   isLight,
+  gamePhase,
+  spinKickRef,
+  fastSpinCount,
   onRegisterTrigger,
+  onTransitionComplete,
 }: {
   isLight: boolean;
+  gamePhase: GamePhase;
+  spinKickRef: React.MutableRefObject<number>;
+  fastSpinCount: number;
   onRegisterTrigger?: (fn: () => void) => void;
+  onTransitionComplete: () => void;
 }) {
+  const outerGroupRef = useRef<THREE.Group>(null);
   const groupRef = useRef<THREE.Group>(null);
   const ringARef = useRef<THREE.Mesh>(null);
   const ringBRef = useRef<THREE.Mesh>(null);
   const ringCRef = useRef<THREE.Mesh>(null);
+  const morphTimeRef = useRef(0);
+  const transitionDoneRef = useRef(false);
+  const spinVelRef = useRef(0);
+  const extraRotYRef = useRef(0);
 
   const arcRef = useRef<THREE.Mesh>(null);
   const arcMatRef = useRef<THREE.MeshBasicMaterial>(null);
@@ -116,7 +166,9 @@ function MinimalistSculpture({
 
   const { viewport, camera } = useThree();
   const R = 1.32;
-  const fitScale = Math.min(1, Math.min(viewport.width, viewport.height) / 3.46);
+  const rawFitScale = Math.min(viewport.width, viewport.height) / 3.46;
+  const fitScale =
+    Number.isFinite(rawFitScale) && rawFitScale > 0.1 ? Math.min(1, rawFitScale) : 0.85;
 
   const { originPos, hubPositions, arcs, landDotPositions, oceanDotPositions } = useMemo(() => {
     const origin = latLonToVec3(ORIGIN.lat, ORIGIN.lon, R);
@@ -170,15 +222,73 @@ function MinimalistSculpture({
     });
   }, [onRegisterTrigger]);
 
-  useFrame(({ clock, pointer }) => {
+  useFrame(({ clock, pointer }, delta) => {
+    const dt = Math.min(delta, 0.05);
     const t = clock.getElapsedTime();
 
+    if (outerGroupRef.current) {
+      if (gamePhase === 'spinning_transition') {
+        outerGroupRef.current.visible = true;
+        morphTimeRef.current += dt;
+        const p = clamp01(morphTimeRef.current / 1.08);
+        // Hold full-size rapid spin for the first 28% so user clearly sees the globe spinning, then shrink into the basketball
+        const shrinkP = clamp01((p - 0.24) / 0.76);
+        const eased = easeOutCubic(shrinkP);
+
+        if (groupRef.current) {
+          groupRef.current.rotation.y += dt * (28 * (1 - shrinkP * 0.25));
+          groupRef.current.rotation.x += dt * 8.5;
+        }
+
+        const scaleNow = fitScale * THREE.MathUtils.lerp(1, 0.178, eased);
+        outerGroupRef.current.scale.setScalar(scaleNow);
+        outerGroupRef.current.position.set(
+          0,
+          THREE.MathUtils.lerp(0, -1.04 * fitScale, eased),
+          THREE.MathUtils.lerp(0, 0.42 * fitScale, eased)
+        );
+
+        if (p >= 1 && !transitionDoneRef.current) {
+          transitionDoneRef.current = true;
+          onTransitionComplete();
+        }
+        return;
+      }
+
+      if (gamePhase === 'playing' || gamePhase === 'game_over') {
+        outerGroupRef.current.visible = false;
+        return;
+      }
+
+      // 'globe' or 'ready_to_spin'
+      outerGroupRef.current.visible = true;
+      morphTimeRef.current = 0;
+      transitionDoneRef.current = false;
+      const curScale = Number.isFinite(outerGroupRef.current.scale.x)
+        ? outerGroupRef.current.scale.x
+        : fitScale;
+      outerGroupRef.current.scale.setScalar(
+        THREE.MathUtils.lerp(curScale, fitScale, 0.14)
+      );
+      outerGroupRef.current.position.lerp(new THREE.Vector3(0, 0, 0), 0.14);
+    }
+
     if (groupRef.current) {
+      if (spinKickRef.current !== 0) {
+        spinVelRef.current += spinKickRef.current;
+        spinKickRef.current = 0;
+      }
+      spinVelRef.current = THREE.MathUtils.lerp(spinVelRef.current, 0, Math.min(1, dt * 3.4));
+      extraRotYRef.current += spinVelRef.current * dt;
+
       // 3.93 radians (~225 deg) brings London, Dubai, and Chattogram facing directly forward!
-      const targetY = 3.93 + Math.sin(t * 0.08) * 0.18 + pointer.x * 0.25;
+      const idleSpeed =
+        gamePhase === 'ready_to_spin' ? (fastSpinCount === 1 ? 0.42 : 0.22) : 0.08;
+      const targetY =
+        3.93 + extraRotYRef.current + Math.sin(t * idleSpeed) * 0.22 + pointer.x * 0.25;
       const targetX = 0.22 + pointer.y * 0.14;
-      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetY, 0.035);
-      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetX, 0.035);
+      groupRef.current.rotation.y = THREE.MathUtils.lerp(groupRef.current.rotation.y, targetY, 0.055);
+      groupRef.current.rotation.x = THREE.MathUtils.lerp(groupRef.current.rotation.x, targetX, 0.045);
     }
 
     /* ---------- Ping cycle (33s automatic cadence + instant tap-to-beam) ---------- */
@@ -307,7 +417,7 @@ function MinimalistSculpture({
   const glowBlending = isLight ? THREE.NormalBlending : THREE.AdditiveBlending;
 
   return (
-    <group scale={fitScale}>
+    <group ref={outerGroupRef} scale={fitScale}>
       <group ref={groupRef}>
         {/* The Solid Planetary Sphere Body */}
         <mesh>
@@ -457,13 +567,794 @@ function MinimalistSculpture({
   );
 }
 
+function buildBasketballSeams(radius: number): Float32Array {
+  const segments: number[] = [];
+  const steps = 96;
+
+  const pushLoop = (pts: THREE.Vector3[]) => {
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i];
+      const b = pts[(i + 1) % pts.length];
+      segments.push(a.x, a.y, a.z, b.x, b.y, b.z);
+    }
+  };
+
+  // 1. Equatorial seam (y = 0)
+  const eq: THREE.Vector3[] = [];
+  // 2. Meridian seam (x = 0)
+  const mer: THREE.Vector3[] = [];
+  // 3. Classic 8-panel saddle seam curve
+  const saddle: THREE.Vector3[] = [];
+  const aCoef = 0.42;
+  const bCoef = 1 - aCoef;
+  const cCoef = 2 * Math.sqrt(aCoef * bCoef);
+
+  for (let i = 0; i < steps; i++) {
+    const t = (i / steps) * Math.PI * 2;
+    eq.push(new THREE.Vector3(Math.cos(t) * radius, 0, Math.sin(t) * radius));
+    mer.push(new THREE.Vector3(0, Math.cos(t) * radius, Math.sin(t) * radius));
+
+    const sx = aCoef * Math.cos(t) + bCoef * Math.cos(3 * t);
+    const sy = aCoef * Math.sin(t) - bCoef * Math.sin(3 * t);
+    const sz = cCoef * Math.sin(2 * t);
+    saddle.push(new THREE.Vector3(sx, sy, sz).normalize().multiplyScalar(radius));
+  }
+
+  pushLoop(eq);
+  pushLoop(mer);
+  pushLoop(saddle);
+
+  return new Float32Array(segments);
+}
+
+function buildBackboardLines(): Float32Array {
+  const segs: number[] = [];
+  const addRect = (w: number, h: number, yCenter: number, z: number) => {
+    const hw = w / 2;
+    const hh = h / 2;
+    const p0 = [-hw, yCenter - hh, z];
+    const p1 = [hw, yCenter - hh, z];
+    const p2 = [hw, yCenter + hh, z];
+    const p3 = [-hw, yCenter + hh, z];
+    segs.push(
+      p0[0], p0[1], p0[2], p1[0], p1[1], p1[2],
+      p1[0], p1[1], p1[2], p2[0], p2[1], p2[2],
+      p2[0], p2[1], p2[2], p3[0], p3[1], p3[2],
+      p3[0], p3[1], p3[2], p0[0], p0[1], p0[2]
+    );
+  };
+  // Outer backboard frame & inner shooter's square
+  addRect(1.16, 0.72, 0.25, -0.32);
+  addRect(0.44, 0.30, 0.16, -0.315);
+  return new Float32Array(segs);
+}
+
+function buildHoopNetLines(topR: number, bottomR: number, height: number): Float32Array {
+  const segs: number[] = [];
+  const strands = 12;
+  const tiers = 3;
+
+  for (let tier = 0; tier < tiers; tier++) {
+    const t0 = tier / tiers;
+    const t1 = (tier + 1) / tiers;
+    const r0 = THREE.MathUtils.lerp(topR, bottomR, t0);
+    const r1 = THREE.MathUtils.lerp(topR, bottomR, t1);
+    const y0 = -t0 * height;
+    const y1 = -t1 * height;
+    const twist0 = (tier * Math.PI) / strands;
+    const twist1 = ((tier + 1) * Math.PI) / strands;
+
+    for (let i = 0; i < strands; i++) {
+      const a0 = (i / strands) * Math.PI * 2 + twist0;
+      const aNext = (((i + 1) % strands) / strands) * Math.PI * 2 + twist0;
+      const b0 = (i / strands) * Math.PI * 2 + twist1;
+
+      const xTopA = Math.cos(a0) * r0;
+      const zTopA = Math.sin(a0) * r0;
+      const xTopB = Math.cos(aNext) * r0;
+      const zTopB = Math.sin(aNext) * r0;
+      const xBot = Math.cos(b0) * r1;
+      const zBot = Math.sin(b0) * r1;
+
+      // Left & right diamond diagonals
+      segs.push(xTopA, y0, zTopA, xBot, y1, zBot);
+      segs.push(xTopB, y0, zTopB, xBot, y1, zBot);
+    }
+  }
+  return new Float32Array(segs);
+}
+
+function BasketballCourt3D({
+  isLight,
+  gamePhase,
+  controlRef,
+  onScore,
+  onMiss,
+}: {
+  isLight: boolean;
+  gamePhase: GamePhase;
+  controlRef: React.MutableRefObject<CourtControlState>;
+  onScore: (isSwish: boolean) => void;
+  onMiss: () => void;
+}) {
+  const { viewport, camera } = useThree();
+  const rawFitScale = Math.min(viewport.width, viewport.height) / 3.46;
+  const fitScale =
+    Number.isFinite(rawFitScale) && rawFitScale > 0.1 ? Math.min(1, rawFitScale) : 0.85;
+
+  const courtGroupRef = useRef<THREE.Group>(null);
+  const hoopGroupRef = useRef<THREE.Group>(null);
+  const netGroupRef = useRef<THREE.Group>(null);
+  const rimMatRef = useRef<THREE.MeshStandardMaterial>(null);
+  const shockwaveRef = useRef<THREE.Mesh>(null);
+  const shockwaveMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const ballGroupRef = useRef<THREE.Group>(null);
+  const ballMeshGroupRef = useRef<THREE.Group>(null);
+  const aimDotsRefs = useRef<Array<THREE.Mesh | null>>([]);
+
+  const hoopPhaseRef = useRef(0);
+  const hoopXRef = useRef(0);
+  const difficultyRef = useRef(0);
+  const netSwishRef = useRef(0);
+  const transitionElapsedRef = useRef(0);
+  const effectFlashRef = useRef<{ timer: number; color: string }>({ timer: 0, color: '#F2D272' });
+
+  const flightRef = useRef<{
+    state: 'ready' | 'flying' | 'resolving';
+    time: number;
+    startX: number;
+    vx: number;
+    scored: boolean;
+    bounced: boolean;
+    bounceVx: number;
+    bounceVy: number;
+    pos: THREE.Vector3;
+  }>({
+    state: 'ready',
+    time: 0,
+    startX: 0,
+    vx: 0,
+    scored: false,
+    bounced: false,
+    bounceVx: 0,
+    bounceVy: 0,
+    pos: new THREE.Vector3(0, -1.04, 0.42),
+  });
+
+  const BALL_R = 0.24;
+  const LAUNCH_Y = -1.04;
+  const LAUNCH_Z = 0.42;
+  const HOOP_Y = 0.62;
+  const HOOP_Z = -0.45;
+  const FLIGHT_DURATION = 0.56;
+
+  const { seamPositions, backboardPositions, netPositions } = useMemo(
+    () => ({
+      seamPositions: buildBasketballSeams(BALL_R * 1.012),
+      backboardPositions: buildBackboardLines(),
+      netPositions: buildHoopNetLines(0.31, 0.18, 0.36),
+    }),
+    [BALL_R]
+  );
+
+  // Reset court state when entering spinning_transition or playing fresh
+  useEffect(() => {
+    if (gamePhase === 'spinning_transition') {
+      difficultyRef.current = 0;
+      transitionElapsedRef.current = 0;
+      flightRef.current.state = 'ready';
+      flightRef.current.time = 0;
+      controlRef.current.ballX = 0;
+      controlRef.current.targetBallX = 0;
+      controlRef.current.pendingThrow = null;
+      if (hoopGroupRef.current) {
+        hoopGroupRef.current.position.set(0, 1.38, HOOP_Z);
+      }
+    }
+  }, [gamePhase, controlRef, HOOP_Z]);
+
+  useFrame((_, delta) => {
+    const dt = Math.min(delta, 0.05);
+
+    // Defensive recovery if OrbitControls ever produced a non-finite camera coordinate
+    if (
+      !Number.isFinite(camera.position.x) ||
+      !Number.isFinite(camera.position.y) ||
+      !Number.isFinite(camera.position.z)
+    ) {
+      camera.position.set(0, 0.02, 5.15);
+      camera.up.set(0, 1, 0);
+      camera.lookAt(0, 0, 0);
+    }
+
+    const active =
+      gamePhase === 'spinning_transition' ||
+      gamePhase === 'playing' ||
+      gamePhase === 'game_over';
+
+    if (courtGroupRef.current) {
+      courtGroupRef.current.visible = active;
+      courtGroupRef.current.scale.setScalar(fitScale);
+    }
+    if (!active) return;
+
+    if (gamePhase === 'spinning_transition') {
+      transitionElapsedRef.current += dt;
+    }
+
+    // Smoothly align camera straight-on with the court after any globe orbit rotation
+    camera.position.lerp(new THREE.Vector3(0, 0.02, 5.15), 0.16);
+    camera.up.lerp(new THREE.Vector3(0, 1, 0), 0.16);
+    camera.lookAt(0, 0, 0);
+
+    // 1. Move Hoop Left <-> Right continuously
+    const speed = 1.08 + Math.min(difficultyRef.current * 0.09, 0.9);
+    hoopPhaseRef.current += dt * (gamePhase === 'spinning_transition' ? speed * 0.65 : speed);
+    const maxHoopX = 0.92;
+    hoopXRef.current = Math.sin(hoopPhaseRef.current) * maxHoopX;
+
+    if (hoopGroupRef.current) {
+      hoopGroupRef.current.position.x = hoopXRef.current;
+      hoopGroupRef.current.position.y = THREE.MathUtils.lerp(
+        hoopGroupRef.current.position.y,
+        HOOP_Y,
+        0.11
+      );
+      hoopGroupRef.current.position.z = HOOP_Z;
+    }
+
+    // 2. Net Swish & Rim Shockwave Animation
+    if (netSwishRef.current > 0) {
+      netSwishRef.current = Math.max(0, netSwishRef.current - dt * 2.4);
+      const sw = Math.sin(netSwishRef.current * Math.PI);
+      if (netGroupRef.current) {
+        netGroupRef.current.scale.set(1 + sw * 0.28, 1 - sw * 0.36, 1 + sw * 0.28);
+        netGroupRef.current.rotation.z = Math.sin(netSwishRef.current * Math.PI * 3) * 0.12;
+      }
+    } else if (netGroupRef.current) {
+      netGroupRef.current.scale.set(1, 1, 1);
+      netGroupRef.current.rotation.z = 0;
+    }
+
+    if (effectFlashRef.current.timer > 0) {
+      effectFlashRef.current.timer = Math.max(0, effectFlashRef.current.timer - dt * 2.1);
+      const p = 1 - effectFlashRef.current.timer;
+      if (shockwaveRef.current && shockwaveMatRef.current) {
+        shockwaveRef.current.visible = true;
+        shockwaveRef.current.scale.setScalar(1 + p * 1.45);
+        shockwaveMatRef.current.color.set(effectFlashRef.current.color);
+        shockwaveMatRef.current.opacity = (1 - p) * 0.85;
+      }
+      if (rimMatRef.current) {
+        rimMatRef.current.emissive.set(effectFlashRef.current.color);
+        rimMatRef.current.emissiveIntensity = (1 - p) * 0.7;
+      }
+    } else {
+      if (shockwaveRef.current) shockwaveRef.current.visible = false;
+      if (rimMatRef.current) rimMatRef.current.emissiveIntensity = isLight ? 0.08 : 0.16;
+    }
+
+    // 3. Basketball Position, Throw Flight, & Collision Physics
+    const ctrl = controlRef.current;
+    const fl = flightRef.current;
+
+    if (gamePhase === 'playing' && fl.state === 'ready' && ctrl.pendingThrow) {
+      const throwCmd = ctrl.pendingThrow;
+      ctrl.pendingThrow = null;
+      fl.state = 'flying';
+      fl.time = 0;
+      fl.startX = ctrl.ballX;
+      fl.vx = throwCmd.vx;
+      fl.scored = false;
+      fl.bounced = false;
+      sounds.playBasketballLaunch();
+    }
+
+    if (fl.state === 'ready') {
+      ctrl.ballX = THREE.MathUtils.lerp(ctrl.ballX, ctrl.targetBallX, ctrl.isAiming ? 0.62 : 0.28);
+      fl.pos.set(ctrl.ballX, LAUNCH_Y, LAUNCH_Z);
+      if (ballMeshGroupRef.current) {
+        ballMeshGroupRef.current.rotation.z = -ctrl.ballX * 2.1;
+        ballMeshGroupRef.current.rotation.x += dt * (gamePhase === 'spinning_transition' ? 16 : 1.15);
+        ballMeshGroupRef.current.rotation.y += dt * (gamePhase === 'spinning_transition' ? 22 : 0.75);
+      }
+      if (ballGroupRef.current) {
+        // Scale basketball in cleanly as the spinning globe morphs down into it
+        const morphIn =
+          gamePhase === 'spinning_transition'
+            ? easeOutCubic(clamp01((transitionElapsedRef.current - 0.32) / 0.68))
+            : 1;
+        ballGroupRef.current.scale.setScalar(Math.max(0.001, morphIn));
+      }
+    } else if (fl.state === 'flying') {
+      fl.time += dt;
+      const u = fl.time / FLIGHT_DURATION;
+
+      const curX = fl.startX + fl.vx * u;
+      const curZ = THREE.MathUtils.lerp(LAUNCH_Z, HOOP_Z, u);
+      const linearY = THREE.MathUtils.lerp(LAUNCH_Y, HOOP_Y, u);
+      const arcLift = 4 * u * (1 - u) * 0.96;
+      const curY = linearY + arcLift;
+
+      fl.pos.set(curX, curY, curZ);
+
+      if (ballMeshGroupRef.current) {
+        ballMeshGroupRef.current.rotation.x -= dt * 19;
+        ballMeshGroupRef.current.rotation.z = -fl.vx * 0.8;
+      }
+      if (ballGroupRef.current) {
+        ballGroupRef.current.scale.setScalar(THREE.MathUtils.lerp(1, 0.84, clamp01(u)));
+      }
+
+      // Reached the hoop plane! Evaluate swish / bank-in / rim-clank / miss
+      if (u >= 1) {
+        const dx = curX - hoopXRef.current;
+        const absDx = Math.abs(dx);
+
+        if (absDx <= 0.165) {
+          // Pure Swish
+          fl.scored = true;
+          fl.state = 'resolving';
+          fl.time = 0;
+          difficultyRef.current += 1;
+          netSwishRef.current = 1;
+          effectFlashRef.current = { timer: 1, color: '#F2D272' };
+          sounds.playBasketballSwish();
+          onScore(true);
+        } else if (absDx <= 0.275) {
+          // Rim-In / Bank Shot
+          fl.scored = true;
+          fl.state = 'resolving';
+          fl.time = 0;
+          difficultyRef.current += 1;
+          netSwishRef.current = 0.85;
+          effectFlashRef.current = { timer: 1, color: '#E5C77B' };
+          sounds.playVolumeTick();
+          sounds.playBasketballSwish();
+          onScore(false);
+        } else {
+          // Miss (Rim Clank or Airball)
+          fl.scored = false;
+          fl.state = 'resolving';
+          fl.time = 0;
+          fl.bounced = absDx <= 0.44;
+          fl.bounceVx = fl.bounced ? Math.sign(dx || 1) * 1.45 : fl.vx * 0.6;
+          fl.bounceVy = fl.bounced ? 0.55 : -1.2;
+          effectFlashRef.current = { timer: 1, color: '#EF4444' };
+          sounds.playBasketballRimMiss();
+          onMiss();
+        }
+      }
+    } else if (fl.state === 'resolving') {
+      fl.time += dt;
+      if (fl.scored) {
+        // Guide ball cleanly down through the center of the net
+        fl.pos.x = THREE.MathUtils.lerp(fl.pos.x, hoopXRef.current, 0.3);
+        fl.pos.y = HOOP_Y - fl.time * 1.85;
+        fl.pos.z = HOOP_Z;
+      } else {
+        // Rim bounce or airball gravity drop
+        fl.pos.x += fl.bounceVx * dt;
+        fl.pos.y += fl.bounceVy * dt;
+        fl.bounceVy -= 6.8 * dt;
+      }
+
+      if (ballMeshGroupRef.current) {
+        ballMeshGroupRef.current.rotation.x -= dt * 12;
+      }
+
+      if (fl.time >= 0.36) {
+        fl.state = 'ready';
+        fl.time = 0;
+        if (ballGroupRef.current) ballGroupRef.current.scale.setScalar(1);
+      }
+    }
+
+    if (ballGroupRef.current) {
+      ballGroupRef.current.position.copy(fl.pos);
+    }
+
+    // 4. Update Trajectory Aim Preview Dots when swiping upward to shoot
+    const showAim =
+      gamePhase === 'playing' && fl.state === 'ready' && ctrl.isAiming && ctrl.isSwiping;
+    aimDotsRefs.current.forEach((dot, idx) => {
+      if (!dot) return;
+      dot.visible = showAim;
+      if (!showAim) return;
+      const stepU = (idx + 1) / (aimDotsRefs.current.length + 1);
+      const ax = ctrl.ballX + ctrl.aimVx * stepU;
+      const az = THREE.MathUtils.lerp(LAUNCH_Z, HOOP_Z, stepU);
+      const ay =
+        THREE.MathUtils.lerp(LAUNCH_Y, HOOP_Y, stepU) + 4 * stepU * (1 - stepU) * 0.96;
+      dot.position.set(ax, ay, az);
+    });
+  });
+
+  const frameBarColor = isLight ? '#5A4A36' : '#C8B89A';
+  const targetSquareColor = isLight ? '#B87824' : '#E5C77B';
+
+  return (
+    <group
+      ref={courtGroupRef}
+      scale={fitScale}
+      visible={
+        gamePhase === 'spinning_transition' ||
+        gamePhase === 'playing' ||
+        gamePhase === 'game_over'
+      }
+    >
+      {/* Moving Architectural Hoop Assembly */}
+      <group ref={hoopGroupRef} position={[0, 1.38, HOOP_Z]}>
+        {/* Smoked Glass Backboard Panel */}
+        <mesh position={[0, 0.25, -0.33]}>
+          <boxGeometry args={[1.16, 0.72, 0.018]} />
+          <meshStandardMaterial
+            color={isLight ? '#E2DDD2' : '#121216'}
+            roughness={0.28}
+            metalness={0.25}
+            transparent
+            opacity={isLight ? 0.88 : 0.72}
+          />
+        </mesh>
+
+        {/* Sculpted 3D Outer Backboard Frame Bars (crisp at all DPIs in Light & Dark Mode) */}
+        <mesh position={[0, 0.61, -0.318]}>
+          <boxGeometry args={[1.18, 0.018, 0.016]} />
+          <meshBasicMaterial color={frameBarColor} />
+        </mesh>
+        <mesh position={[0, -0.11, -0.318]}>
+          <boxGeometry args={[1.18, 0.018, 0.016]} />
+          <meshBasicMaterial color={frameBarColor} />
+        </mesh>
+        <mesh position={[-0.58, 0.25, -0.318]}>
+          <boxGeometry args={[0.018, 0.74, 0.016]} />
+          <meshBasicMaterial color={frameBarColor} />
+        </mesh>
+        <mesh position={[0.58, 0.25, -0.318]}>
+          <boxGeometry args={[0.018, 0.74, 0.016]} />
+          <meshBasicMaterial color={frameBarColor} />
+        </mesh>
+
+        {/* Sculpted 3D Inner Shooter's Target Square Bars */}
+        <mesh position={[0, 0.31, -0.314]}>
+          <boxGeometry args={[0.45, 0.015, 0.014]} />
+          <meshBasicMaterial color={targetSquareColor} />
+        </mesh>
+        <mesh position={[0, 0.01, -0.314]}>
+          <boxGeometry args={[0.45, 0.015, 0.014]} />
+          <meshBasicMaterial color={targetSquareColor} />
+        </mesh>
+        <mesh position={[-0.22, 0.16, -0.314]}>
+          <boxGeometry args={[0.015, 0.315, 0.014]} />
+          <meshBasicMaterial color={targetSquareColor} />
+        </mesh>
+        <mesh position={[0.22, 0.16, -0.314]}>
+          <boxGeometry args={[0.015, 0.315, 0.014]} />
+          <meshBasicMaterial color={targetSquareColor} />
+        </mesh>
+
+        {/* Backboard Hairline Accent */}
+        <lineSegments>
+          <bufferGeometry>
+            <bufferAttribute
+              attach="attributes-position"
+              args={[backboardPositions, 3]}
+            />
+          </bufferGeometry>
+          <lineBasicMaterial
+            color={frameBarColor}
+            transparent
+            opacity={0.85}
+          />
+        </lineSegments>
+
+        {/* Rim Mounting Bracket */}
+        <mesh position={[0, 0.02, -0.31]}>
+          <boxGeometry args={[0.15, 0.055, 0.065]} />
+          <meshStandardMaterial
+            color={isLight ? '#8C6226' : '#C8B89A'}
+            metalness={0.6}
+            roughness={0.3}
+          />
+        </mesh>
+
+        {/* Metallic Champagne-Gold / Copper Rim */}
+        <mesh rotation={[Math.PI / 2 + 0.14, 0, 0]}>
+          <torusGeometry args={[0.32, 0.019, 16, 64]} />
+          <meshStandardMaterial
+            ref={rimMatRef}
+            color={isLight ? '#C9831D' : '#E5C77B'}
+            emissive={isLight ? '#C9831D' : '#E5C77B'}
+            emissiveIntensity={isLight ? 0.08 : 0.16}
+            metalness={0.72}
+            roughness={0.22}
+          />
+        </mesh>
+
+        {/* Expanding Score / Miss Shockwave Ring */}
+        <mesh ref={shockwaveRef} rotation={[Math.PI / 2 + 0.14, 0, 0]} visible={false}>
+          <ringGeometry args={[0.33, 0.37, 48]} />
+          <meshBasicMaterial
+            ref={shockwaveMatRef}
+            color="#F2D272"
+            side={THREE.DoubleSide}
+            transparent
+            opacity={0.8}
+          />
+        </mesh>
+
+        {/* Dynamic Geometric Net */}
+        <group ref={netGroupRef} rotation={[0.14, 0, 0]}>
+          <lineSegments>
+            <bufferGeometry>
+              <bufferAttribute
+                attach="attributes-position"
+                args={[netPositions, 3]}
+              />
+            </bufferGeometry>
+            <lineBasicMaterial
+              color={isLight ? '#4A3F32' : '#E8DAC0'}
+              transparent
+              opacity={isLight ? 0.82 : 0.72}
+            />
+          </lineSegments>
+          {/* Mid & Bottom Net Rings for crisp 3D definition */}
+          <mesh position={[0, -0.18, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.245, 0.0045, 8, 36]} />
+            <meshBasicMaterial
+              color={isLight ? '#6B5B47' : '#C8B89A'}
+              transparent
+              opacity={0.55}
+            />
+          </mesh>
+          <mesh position={[0, -0.36, 0]} rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[0.18, 0.005, 8, 36]} />
+            <meshBasicMaterial
+              color={isLight ? '#6B5B47' : '#C8B89A'}
+              transparent
+              opacity={0.65}
+            />
+          </mesh>
+        </group>
+      </group>
+
+      {/* Dotted Trajectory Aim Preview Arc */}
+      {[0, 1, 2, 3, 4, 5, 6].map((idx) => (
+        <mesh
+          key={`aim-dot-${idx}`}
+          ref={(el) => {
+            aimDotsRefs.current[idx] = el;
+          }}
+          visible={false}
+        >
+          <sphereGeometry args={[0.024 * (1 - idx * 0.08), 12, 12]} />
+          <meshBasicMaterial
+            color={isLight ? '#B87824' : '#E5C77B'}
+            transparent
+            opacity={0.75 - idx * 0.07}
+          />
+        </mesh>
+      ))}
+
+      {/* The Luxury Tactile 3D Basketball */}
+      <group ref={ballGroupRef} position={[0, LAUNCH_Y, LAUNCH_Z]}>
+        <group ref={ballMeshGroupRef}>
+          <mesh>
+            <sphereGeometry args={[BALL_R, 48, 48]} />
+            <meshStandardMaterial
+              color={isLight ? '#C85E22' : '#2D1A10'}
+              emissive={isLight ? '#5A2408' : '#1A0E08'}
+              emissiveIntensity={0.22}
+              roughness={0.38}
+              metalness={0.22}
+            />
+          </mesh>
+
+          {/* 3D Sculpted Equatorial & Meridian Seam Rings */}
+          <mesh rotation={[Math.PI / 2, 0, 0]}>
+            <torusGeometry args={[BALL_R * 1.003, 0.0065, 10, 64]} />
+            <meshBasicMaterial color={isLight ? '#23160E' : '#E5C77B'} />
+          </mesh>
+          <mesh rotation={[0, Math.PI / 2, 0]}>
+            <torusGeometry args={[BALL_R * 1.003, 0.0065, 10, 64]} />
+            <meshBasicMaterial color={isLight ? '#23160E' : '#E5C77B'} />
+          </mesh>
+
+          {/* 8-Panel Gold / Espresso Basketball Saddle Seam Ribs */}
+          <lineSegments>
+            <bufferGeometry>
+              <bufferAttribute
+                attach="attributes-position"
+                args={[seamPositions, 3]}
+              />
+            </bufferGeometry>
+            <lineBasicMaterial
+              color={isLight ? '#23160E' : '#F2D272'}
+              transparent
+              opacity={0.95}
+            />
+          </lineSegments>
+        </group>
+
+        {/* Subtle Launch Pad Ground Ring */}
+        <mesh position={[0, -BALL_R - 0.04, 0]} rotation={[Math.PI / 2, 0, 0]}>
+          <ringGeometry args={[0.26, 0.29, 36]} />
+          <meshBasicMaterial
+            color={isLight ? '#8A765A' : '#C8B89A'}
+            side={THREE.DoubleSide}
+            transparent
+            opacity={isLight ? 0.55 : 0.36}
+          />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+function CanvasTouchActionSync({ touchAction }: { touchAction: 'pan-y' | 'none' }) {
+  const gl = useThree((state) => state.gl);
+  useEffect(() => {
+    gl.domElement.style.touchAction = touchAction;
+  }, [gl, touchAction]);
+  return null;
+}
+
 export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOverride }) => {
   const { theme } = useTheme();
   const isLight = (modeOverride ?? theme) === 'light';
   const triggerFnRef = useRef<(() => void) | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const [gamePhase, setGamePhase] = useState<GamePhase>('globe');
+  const [score, setScore] = useState(0);
+  const [bestScore, setBestScore] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [shotEvent, setShotEvent] = useState<ShotEvent | null>(null);
+  const [fastSpinCount, setFastSpinCount] = useState(0);
+
   const [tapPulsing, setTapPulsing] = useState(false);
-  const pointerStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+  const [globeHitEl, setGlobeHitEl] = useState<HTMLDivElement | null>(null);
+  const [isGlobeOnlyTouch, setIsGlobeOnlyTouch] = useState(false);
+  const [globeDiameterPx, setGlobeDiameterPx] = useState<number | null>(null);
+  const [controlsReady, setControlsReady] = useState(false);
+
   const lastTriggerTimeRef = useRef(0);
+  const spinKickRef = useRef(0);
+  const globeSpinRef = useRef<GlobeSpinTracker>({
+    active: false,
+    pointerId: null,
+    startX: 0,
+    startY: 0,
+    startTime: 0,
+    samples: [],
+    strokeRegisteredAt: 0,
+    strokeDirX: 0,
+    strokeDirY: 0,
+    fastSpinCount: 0,
+    lastFastSpinAt: 0,
+  });
+
+  // Court drag & swipe-to-shoot state
+  const controlRef = useRef<CourtControlState>({
+    ballX: 0,
+    targetBallX: 0,
+    aimVx: 0,
+    isAiming: false,
+    isSwiping: false,
+    pendingThrow: null,
+  });
+  const courtPointerRef = useRef<{
+    active: boolean;
+    pointerId: number | null;
+    prevX: number;
+    prevY: number;
+    originX: number;
+    originY: number;
+  }>({
+    active: false,
+    pointerId: null,
+    prevX: 0,
+    prevY: 0,
+    originX: 0,
+    originY: 0,
+  });
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1023px), (pointer: coarse)');
+    const updateMode = () => setIsGlobeOnlyTouch(mq.matches);
+    updateMode();
+    mq.addEventListener('change', updateMode);
+    setControlsReady(true);
+
+    const el = containerRef.current;
+    if (!el) return () => mq.removeEventListener('change', updateMode);
+
+    const updateDiameter = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.width > 0 && rect.height > 0) {
+        setGlobeDiameterPx(Math.round(Math.min(rect.width, rect.height) * 0.76));
+      }
+    };
+    updateDiameter();
+
+    const observer = new ResizeObserver(updateDiameter);
+    observer.observe(el);
+
+    return () => {
+      mq.removeEventListener('change', updateMode);
+      observer.disconnect();
+    };
+  }, []);
+
+  // Expire first fast spin if user does not repeat a second fast spin within 2.8s
+  useEffect(() => {
+    if (gamePhase !== 'ready_to_spin') {
+      globeSpinRef.current.fastSpinCount = 0;
+      globeSpinRef.current.lastFastSpinAt = 0;
+      if (fastSpinCount !== 0) setFastSpinCount(0);
+      return;
+    }
+    if (fastSpinCount !== 1) return;
+
+    const timer = setTimeout(() => {
+      globeSpinRef.current.fastSpinCount = 0;
+      globeSpinRef.current.lastFastSpinAt = 0;
+      setFastSpinCount(0);
+    }, 2800);
+    return () => clearTimeout(timer);
+  }, [gamePhase, fastSpinCount]);
+
+  // Auto-clear shot feedback toast
+  useEffect(() => {
+    if (!shotEvent) return;
+    const timer = setTimeout(() => setShotEvent(null), 1150);
+    return () => clearTimeout(timer);
+  }, [shotEvent]);
+
+  const startSpinTransition = () => {
+    globeSpinRef.current.fastSpinCount = 0;
+    globeSpinRef.current.lastFastSpinAt = 0;
+    globeSpinRef.current.active = false;
+    setFastSpinCount(0);
+    sounds.playChime();
+    setScore(0);
+    setStreak(0);
+    setLives(3);
+    setShotEvent(null);
+    setGamePhase('spinning_transition');
+  };
+
+  const resetGlobeTracker = () => {
+    globeSpinRef.current.fastSpinCount = 0;
+    globeSpinRef.current.lastFastSpinAt = 0;
+    setFastSpinCount(0);
+  };
+
+  const registerFastSpin = (dirX: number, dirY: number, now: number) => {
+    const tracker = globeSpinRef.current;
+    if (tracker.lastFastSpinAt > 0 && now - tracker.lastFastSpinAt < 100) return;
+    if (tracker.lastFastSpinAt > 0 && now - tracker.lastFastSpinAt > 2800) {
+      tracker.fastSpinCount = 0;
+    }
+
+    const nextCount = tracker.fastSpinCount + 1;
+    tracker.fastSpinCount = nextCount;
+    tracker.lastFastSpinAt = now;
+    tracker.strokeRegisteredAt = now;
+    tracker.strokeDirX = dirX;
+    tracker.strokeDirY = dirY;
+
+    const kickDir = Math.abs(dirX) >= Math.abs(dirY) ? (dirX >= 0 ? 1 : -1) : dirY >= 0 ? 1 : -1;
+    spinKickRef.current += kickDir * 14;
+
+    if (nextCount >= 2) {
+      startSpinTransition();
+    } else {
+      sounds.playApertureClick();
+      setFastSpinCount(1);
+    }
+  };
 
   const handleTrigger = () => {
     const now = Date.now();
@@ -473,36 +1364,375 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
     setTapPulsing(true);
     setTimeout(() => setTapPulsing(false), 300);
     triggerFnRef.current?.();
+
+    if (gamePhase === 'globe') {
+      resetGlobeTracker();
+      setGamePhase('ready_to_spin');
+    }
   };
 
-  const handlePointerDown = (e: React.PointerEvent) => {
-    pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  const handleGlobePointerDown = (e: React.PointerEvent) => {
+    const now = performance.now();
+    const tracker = globeSpinRef.current;
+    if (tracker.lastFastSpinAt > 0 && now - tracker.lastFastSpinAt > 2800) {
+      resetGlobeTracker();
+    }
+    tracker.active = true;
+    tracker.pointerId = e.pointerId;
+    tracker.startX = e.clientX;
+    tracker.startY = e.clientY;
+    tracker.startTime = now;
+    tracker.samples = [{ x: e.clientX, y: e.clientY, t: now }];
+    tracker.strokeRegisteredAt = 0;
+    tracker.strokeDirX = 0;
+    tracker.strokeDirY = 0;
   };
 
-  const handlePointerUp = (e: React.PointerEvent) => {
-    if (!pointerStartRef.current) return;
-    const dx = Math.abs(e.clientX - pointerStartRef.current.x);
-    const dy = Math.abs(e.clientY - pointerStartRef.current.y);
-    const dt = Date.now() - pointerStartRef.current.time;
-    // Tap detection: short tap/click without long orbit drag
-    if (dx < 10 && dy < 10 && dt < 400) {
+  const handleGlobePointerMove = (e: React.PointerEvent) => {
+    const tracker = globeSpinRef.current;
+    if (!tracker.active || tracker.pointerId !== e.pointerId) return;
+    if (gamePhase !== 'ready_to_spin') return;
+
+    const now = performance.now();
+    tracker.samples.push({ x: e.clientX, y: e.clientY, t: now });
+    while (tracker.samples.length > 2 && now - tracker.samples[0].t > 240) {
+      tracker.samples.shift();
+    }
+
+    const anchor = tracker.samples[0];
+    const dt = now - anchor.t;
+    const dx = e.clientX - anchor.x;
+    const dy = e.clientY - anchor.y;
+    const dist = Math.hypot(dx, dy);
+
+    if (dist < 44 || dt < 6) return;
+    const speed = dist / dt; // px per ms (>= 0.40 desktop / >= 0.34 compact touch is a fast spin)
+    const minSpeed = isGlobeOnlyTouch ? 0.34 : 0.4;
+    if (speed < minSpeed) return;
+
+    const dirX = dx / dist;
+    const dirY = dy / dist;
+
+    // Prevent counting a single long swipe twice; allow a second count only on a clear reversal after cooldown
+    if (tracker.strokeRegisteredAt > 0) {
+      if (now - tracker.strokeRegisteredAt < 200) return;
+      const dot = dirX * tracker.strokeDirX + dirY * tracker.strokeDirY;
+      if (dot > -0.35) return;
+    }
+
+    registerFastSpin(dirX, dirY, now);
+    tracker.samples = [{ x: e.clientX, y: e.clientY, t: now }];
+  };
+
+  const handleGlobePointerUp = (e: React.PointerEvent) => {
+    const tracker = globeSpinRef.current;
+    if (!tracker.active || tracker.pointerId !== e.pointerId) return;
+
+    const now = performance.now();
+    const totalDx = e.clientX - tracker.startX;
+    const totalDy = e.clientY - tracker.startY;
+    const totalDist = Math.hypot(totalDx, totalDy);
+    const totalDt = now - tracker.startTime;
+
+    // Catch short explosive flicks coalesced right before release
+    const minReleaseSpeed = isGlobeOnlyTouch ? 0.3 : 0.35;
+    if (
+      gamePhase === 'ready_to_spin' &&
+      tracker.strokeRegisteredAt === 0 &&
+      totalDist >= 46 &&
+      totalDt > 0 &&
+      totalDt <= 420 &&
+      totalDist / totalDt >= minReleaseSpeed
+    ) {
+      registerFastSpin(totalDx / totalDist, totalDy / totalDist, now);
+    } else if (Math.abs(totalDx) < 10 && Math.abs(totalDy) < 10 && totalDt < 400) {
       handleTrigger();
     }
-    pointerStartRef.current = null;
+
+    tracker.active = false;
+    tracker.pointerId = null;
   };
+
+  const handleGlobePointerCancel = () => {
+    globeSpinRef.current.active = false;
+    globeSpinRef.current.pointerId = null;
+  };
+
+  // Basketball Court Drag Left/Right + Swipe Up to Throw Handlers
+  const getCourtProjectionMetrics = (rect: DOMRect) => {
+    const safeW = Math.max(1, rect.width);
+    const safeH = Math.max(1, rect.height);
+    const aspect = safeW / safeH;
+    const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(39 / 2));
+    const vpH = 2 * 5.15 * tanHalfFov;
+    const vpW = vpH * aspect;
+    const fitScale = Math.min(1, Math.min(vpW, vpH) / 3.46);
+
+    const launchDist = 5.15 - 0.42 * fitScale;
+    const hoopDist = 5.15 - -0.45 * fitScale;
+    const halfHLaunch = launchDist * tanHalfFov;
+    const halfHHoop = hoopDist * tanHalfFov;
+
+    const pxPerWorldXLaunch = safeW / ((2 * halfHLaunch * aspect) / fitScale);
+    const pxPerWorldXHoop = safeW / ((2 * halfHHoop * aspect) / fitScale);
+
+    const ballScreenY = ((1 - (-1.04 * fitScale - 0.02) / halfHLaunch) * 0.5) * safeH;
+    const hoopScreenY = ((1 - (0.62 * fitScale - 0.02) / halfHHoop) * 0.5) * safeH;
+    const dyBallToHoopPx = Math.max(48, ballScreenY - hoopScreenY);
+
+    return {
+      pxPerWorldXLaunch,
+      pxPerWorldXHoop,
+      dyBallToHoopPx,
+    };
+  };
+
+  const computeSwipeVx = (
+    ballX: number,
+    dxPx: number,
+    upPx: number,
+    rect: DOMRect
+  ) => {
+    const m = getCourtProjectionMetrics(rect);
+    const slope = dxPx / Math.max(upPx, 24);
+    const projectedDeltaScreenX = slope * m.dyBallToHoopPx;
+    const ballScreenOffsetPx = ballX * m.pxPerWorldXLaunch;
+    const targetHoopX = THREE.MathUtils.clamp(
+      (ballScreenOffsetPx + projectedDeltaScreenX) / m.pxPerWorldXHoop,
+      -1.55,
+      1.55
+    );
+    return THREE.MathUtils.clamp(targetHoopX - ballX, -2.35, 2.35);
+  };
+
+  const handleCourtPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (gamePhase !== 'playing') return;
+    e.preventDefault();
+    try {
+      e.currentTarget.setPointerCapture?.(e.pointerId);
+    } catch {
+      // Ignore synthetic events where pointerId is inactive
+    }
+    controlRef.current.isAiming = true;
+    controlRef.current.isSwiping = false;
+    controlRef.current.aimVx = 0;
+    controlRef.current.pendingThrow = null;
+    courtPointerRef.current = {
+      active: true,
+      pointerId: e.pointerId,
+      prevX: e.clientX,
+      prevY: e.clientY,
+      originX: e.clientX,
+      originY: e.clientY,
+    };
+  };
+
+  const handleCourtPointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ptr = courtPointerRef.current;
+    if (gamePhase !== 'playing' || !ptr.active) return;
+    if (ptr.pointerId !== null && e.pointerId !== ptr.pointerId) return;
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect || rect.width <= 0 || rect.height <= 0) return;
+
+    const stepDx = e.clientX - ptr.prevX;
+    const stepDy = e.clientY - ptr.prevY;
+    ptr.prevX = e.clientX;
+    ptr.prevY = e.clientY;
+
+    const ctrl = controlRef.current;
+
+    if (!ctrl.isSwiping) {
+      const dxFromOrigin = e.clientX - ptr.originX;
+      const upFromOrigin = ptr.originY - e.clientY;
+      const absDxOrigin = Math.abs(dxFromOrigin);
+      const absStepDx = Math.abs(stepDx);
+      const upStep = Math.max(0, -stepDy);
+
+      // Dragging within +-21deg of horizontal (or downward) slides ball 1:1 left <-> right
+      const isHorizontalOrDownStep =
+        stepDy > 1.5 || absStepDx > upStep * 2.5;
+      const isOverallHorizontalDrag =
+        upFromOrigin < 22 && absDxOrigin > Math.max(8, Math.abs(upFromOrigin) * 2.2);
+
+      if (isHorizontalOrDownStep || isOverallHorizontalDrag || upFromOrigin < 2) {
+        const { pxPerWorldXLaunch } = getCourtProjectionMetrics(rect);
+        ctrl.targetBallX = THREE.MathUtils.clamp(
+          ctrl.targetBallX + stepDx / pxPerWorldXLaunch,
+          -1.02,
+          1.02
+        );
+        // Anchor throw origin at end of horizontal placement so curving up aims accurately
+        if (stepDy > 1.5 || (upFromOrigin < 16 && absStepDx > upStep * 2.2)) {
+          ptr.originX = e.clientX;
+          ptr.originY = e.clientY;
+        }
+      }
+
+      // Engage upward swipe aiming once pointer climbs >= 22px at >= 23deg upward slope
+      const finalDx = e.clientX - ptr.originX;
+      const finalUp = ptr.originY - e.clientY;
+      if (finalUp >= 22 && finalUp >= Math.abs(finalDx) * 0.42) {
+        ctrl.isSwiping = true;
+        ctrl.aimVx = computeSwipeVx(ctrl.ballX, finalDx, finalUp, rect);
+      }
+      return;
+    }
+
+    // Active upward swipe: pulling back down cancels the throw cleanly
+    const dx = e.clientX - ptr.originX;
+    const up = ptr.originY - e.clientY;
+    if (up < 14) {
+      ctrl.isSwiping = false;
+      ctrl.aimVx = 0;
+      ptr.originX = e.clientX;
+      ptr.originY = e.clientY;
+      return;
+    }
+
+    ctrl.aimVx = computeSwipeVx(ctrl.ballX, dx, up, rect);
+  };
+
+  const handleCourtPointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ptr = courtPointerRef.current;
+    if (gamePhase !== 'playing' || !ptr.active) return;
+    if (ptr.pointerId !== null && e.pointerId !== ptr.pointerId) return;
+    ptr.active = false;
+    ptr.pointerId = null;
+
+    try {
+      if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+    } catch {
+      // Ignore release errors on synthetic events
+    }
+
+    const ctrl = controlRef.current;
+    const rect = containerRef.current?.getBoundingClientRect();
+    const dx = e.clientX - ptr.originX;
+    const up = ptr.originY - e.clientY;
+
+    ctrl.isAiming = false;
+    ctrl.isSwiping = false;
+    ctrl.aimVx = 0;
+
+    if (rect && rect.width > 0 && rect.height > 0 && up >= 22 && up >= Math.abs(dx) * 0.42) {
+      ctrl.pendingThrow = { vx: computeSwipeVx(ctrl.ballX, dx, up, rect) };
+    }
+  };
+
+  const handleCourtPointerCancel = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ptr = courtPointerRef.current;
+    if (ptr.pointerId !== null && e.pointerId !== ptr.pointerId) return;
+    ptr.active = false;
+    ptr.pointerId = null;
+    controlRef.current.isAiming = false;
+    controlRef.current.isSwiping = false;
+    controlRef.current.aimVx = 0;
+  };
+
+  const handleScore = (isSwish: boolean) => {
+    setScore((prev) => {
+      const next = prev + 1;
+      setBestScore((b) => Math.max(b, next));
+      return next;
+    });
+    setStreak((prev) => {
+      const nextStreak = prev + 1;
+      setShotEvent({
+        id: Date.now(),
+        type: isSwish ? 'swish' : 'bank',
+        label:
+          nextStreak >= 2
+            ? `${isSwish ? 'PURE SWISH' : 'BANK IN'} · STREAK ×${nextStreak}`
+            : isSwish
+            ? 'PURE SWISH · +1'
+            : 'BANK SHOT · +1',
+        sublabel: 'TARGET SYNCHRONIZED',
+      });
+      return nextStreak;
+    });
+  };
+
+  const handleMiss = () => {
+    setStreak(0);
+    setLives((prev) => {
+      const nextLives = Math.max(0, prev - 1);
+      setShotEvent({
+        id: Date.now(),
+        type: 'miss',
+        label: nextLives === 0 ? 'OUT OF LIVES' : 'RIM MISS · -1 LIFE',
+        sublabel:
+          nextLives === 0
+            ? 'SESSION COMPLETE'
+            : `${nextLives} ${nextLives === 1 ? 'LIFE' : 'LIVES'} REMAINING`,
+      });
+      if (nextLives === 0) {
+        setTimeout(() => {
+          setGamePhase((curr) => (curr === 'playing' ? 'game_over' : curr));
+        }, 420);
+      }
+      return nextLives;
+    });
+  };
+
+  const handleReplay = () => {
+    sounds.playLeicaShutter();
+    setScore(0);
+    setStreak(0);
+    setLives(3);
+    setShotEvent(null);
+    controlRef.current.ballX = 0;
+    controlRef.current.targetBallX = 0;
+    controlRef.current.aimVx = 0;
+    controlRef.current.isAiming = false;
+    controlRef.current.isSwiping = false;
+    controlRef.current.pendingThrow = null;
+    courtPointerRef.current.active = false;
+    setGamePhase('playing');
+  };
+
+  const handleReturnToGlobe = () => {
+    sounds.playLeicaShutter();
+    setShotEvent(null);
+    controlRef.current.ballX = 0;
+    controlRef.current.targetBallX = 0;
+    controlRef.current.aimVx = 0;
+    controlRef.current.isAiming = false;
+    controlRef.current.isSwiping = false;
+    controlRef.current.pendingThrow = null;
+    courtPointerRef.current.active = false;
+    resetGlobeTracker();
+    setGamePhase('globe');
+  };
+
+  const isGlobeMode = gamePhase === 'globe' || gamePhase === 'ready_to_spin';
 
   return (
     <div
-      className="relative h-full w-full cursor-grab active:cursor-grabbing select-none touch-pan-y"
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
-      data-cursor="BEAM"
+      ref={containerRef}
+      className={`relative h-full w-full select-none touch-pan-y ${
+        isGlobeMode && !isGlobeOnlyTouch ? 'cursor-grab active:cursor-grabbing' : ''
+      }`}
+      onPointerDown={isGlobeMode && !isGlobeOnlyTouch ? handleGlobePointerDown : undefined}
+      onPointerMove={isGlobeMode && !isGlobeOnlyTouch ? handleGlobePointerMove : undefined}
+      onPointerUp={isGlobeMode && !isGlobeOnlyTouch ? handleGlobePointerUp : undefined}
+      onPointerCancel={isGlobeMode && !isGlobeOnlyTouch ? handleGlobePointerCancel : undefined}
+      data-cursor={isGlobeMode && !isGlobeOnlyTouch ? 'BEAM' : undefined}
     >
       <Canvas
         camera={{ position: [0, 0.02, 5.15], fov: 39 }}
         dpr={[1, 2]}
         gl={{ antialias: true, alpha: true, powerPreference: 'default' }}
+        style={{
+          pointerEvents: isGlobeMode && !isGlobeOnlyTouch ? 'auto' : 'none',
+          touchAction: isGlobeMode && isGlobeOnlyTouch ? 'pan-y' : 'none',
+        }}
       >
+        <CanvasTouchActionSync
+          touchAction={isGlobeMode && isGlobeOnlyTouch ? 'pan-y' : 'none'}
+        />
         <ambientLight intensity={isLight ? 1.15 : 0.55} />
         <directionalLight
           position={[5, 6, 4]}
@@ -516,43 +1746,258 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
         />
         <MinimalistSculpture
           isLight={isLight}
+          gamePhase={gamePhase}
+          spinKickRef={spinKickRef}
+          fastSpinCount={fastSpinCount}
           onRegisterTrigger={(fn) => {
             triggerFnRef.current = fn;
           }}
+          onTransitionComplete={() => {
+            setGamePhase((curr) => (curr === 'spinning_transition' ? 'playing' : curr));
+          }}
         />
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          rotateSpeed={0.45}
-          dampingFactor={0.05}
-          enableDamping
+        <BasketballCourt3D
+          isLight={isLight}
+          gamePhase={gamePhase}
+          controlRef={controlRef}
+          onScore={handleScore}
+          onMiss={handleMiss}
         />
+        {controlsReady && (!isGlobeOnlyTouch || Boolean(globeHitEl)) && (
+          <OrbitControls
+            enabled={isGlobeMode}
+            domElement={isGlobeOnlyTouch && globeHitEl ? globeHitEl : undefined}
+            enableZoom={false}
+            enablePan={false}
+            rotateSpeed={0.45}
+            dampingFactor={0.05}
+            enableDamping
+          />
+        )}
       </Canvas>
 
-      {/* Catchy Floating "Tap" Micro-Pill */}
-      <div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            handleTrigger();
-          }}
-          className={`pointer-events-auto group flex items-center gap-2 rounded-full border border-sand/35 bg-obsidian/90 px-3.5 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.65)] backdrop-blur-md transition-all duration-300 hover:border-sand hover:scale-105 active:scale-95 ${
-            tapPulsing ? 'border-sand bg-sand/25 scale-105 ring-2 ring-sand/40' : ''
+      {/* Mobile / touch circular hitbox in Globe mode: stays mounted so OrbitControls domElement never detaches mid-drag */}
+      {isGlobeOnlyTouch && (
+        <div
+          ref={setGlobeHitEl}
+          onPointerDown={isGlobeMode ? handleGlobePointerDown : undefined}
+          onPointerMove={isGlobeMode ? handleGlobePointerMove : undefined}
+          onPointerUp={isGlobeMode ? handleGlobePointerUp : undefined}
+          onPointerCancel={isGlobeMode ? handleGlobePointerCancel : undefined}
+          data-cursor={isGlobeMode ? 'BEAM' : undefined}
+          style={
+            globeDiameterPx
+              ? { width: `${globeDiameterPx}px`, height: `${globeDiameterPx}px` }
+              : undefined
+          }
+          className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 h-[76%] aspect-square rounded-full z-10 ${
+            isGlobeMode
+              ? 'pointer-events-auto cursor-grab active:cursor-grabbing touch-none'
+              : 'pointer-events-none'
           }`}
-          aria-label="Tap to shoot telemetry beam"
+          aria-label="Drag globe to rotate or tap to beam"
+        />
+      )}
+
+      {/* Interactive Basketball Court Touch/Drag Surface (leaves 16px side scroll rails on mobile) */}
+      {gamePhase === 'playing' && (
+        <div
+          onPointerDown={handleCourtPointerDown}
+          onPointerMove={handleCourtPointerMove}
+          onPointerUp={handleCourtPointerUp}
+          onPointerCancel={handleCourtPointerCancel}
+          style={{ touchAction: 'none' }}
+          className="absolute inset-y-0 inset-x-4 sm:inset-x-0 z-10 cursor-grab active:cursor-grabbing touch-none"
+          aria-label="Drag left or right to aim basketball and swipe up to shoot"
+        />
+      )}
+
+      {/* Minimalist Architectural Score & 3-Lives HUD during Active Game */}
+      {(gamePhase === 'playing' || gamePhase === 'game_over') && (
+        <div className="pointer-events-none absolute inset-x-3 top-2 sm:inset-x-6 sm:top-4 z-20 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 rounded-full border border-alabaster/15 bg-obsidian/85 px-3 py-1 backdrop-blur-md">
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-ink-subtle">
+              Score
+            </span>
+            <span className="font-mono text-xs font-semibold text-alabaster">
+              {String(score).padStart(2, '0')}
+            </span>
+            {streak >= 2 && (
+              <span className="rounded-full bg-sand/20 px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-sand-light">
+                ×{streak}
+              </span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* 3 Lives Indicator */}
+            <div
+              className="flex items-center gap-1.5 rounded-full border border-alabaster/15 bg-obsidian/85 px-3 py-1.5 backdrop-blur-md"
+              aria-label={`${lives} lives remaining`}
+            >
+              {[0, 1, 2].map((idx) => {
+                const alive = idx < lives;
+                return (
+                  <span
+                    key={`life-${idx}`}
+                    className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                      alive
+                        ? 'bg-sand shadow-[0_0_8px_rgba(229,199,123,0.8)] scale-100'
+                        : 'border border-alabaster/25 bg-transparent scale-90 opacity-40'
+                    }`}
+                  />
+                );
+              })}
+            </div>
+
+            {/* Exit back to Globe */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReturnToGlobe();
+              }}
+              className="pointer-events-auto rounded-full border border-alabaster/15 bg-obsidian/85 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-subtle transition-colors hover:border-sand/50 hover:text-alabaster backdrop-blur-md"
+              aria-label="Exit game and return to globe"
+            >
+              × Globe
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Aesthetic Score / Miss Shot Telemetry Toast */}
+      {shotEvent && (
+        <div
+          key={shotEvent.id}
+          className="pointer-events-none absolute left-1/2 top-12 sm:top-16 -translate-x-1/2 z-20 flex flex-col items-center animate-in fade-in zoom-in-95 duration-200"
         >
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sand opacity-80" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-sand" />
-          </span>
-          <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-sand-light font-medium transition-colors group-hover:text-alabaster">
-            Tap
-          </span>
-          <span className="font-mono text-[9px] text-ink-subtle">
-            to beam
-          </span>
-        </button>
+          <div
+            className={`rounded-full border px-3.5 py-1 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)] ${
+              shotEvent.type === 'miss'
+                ? 'border-red-500/40 bg-obsidian/90 text-red-300'
+                : 'border-sand/50 bg-obsidian/90 text-sand-light'
+            }`}
+          >
+            <span className="font-mono text-[9.5px] uppercase tracking-[0.2em] font-medium whitespace-nowrap">
+              {shotEvent.label}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* Game Over Modal Overlay (When 3 Lives Are Spent) */}
+      {gamePhase === 'game_over' && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-void/65 backdrop-blur-sm p-4">
+          <div className="flex w-full max-w-[280px] flex-col items-center rounded-2xl border border-sand/30 bg-obsidian/95 p-5 text-center shadow-[0_16px_48px_rgba(0,0,0,0.75)]">
+            <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-sand-light">
+              Court Session Complete
+            </span>
+            <div className="mt-3 flex items-baseline gap-4">
+              <div>
+                <span className="block font-mono text-[9px] uppercase tracking-[0.16em] text-ink-subtle">
+                  Score
+                </span>
+                <span className="mt-0.5 block font-serif text-3xl text-alabaster">
+                  {String(score).padStart(2, '0')}
+                </span>
+              </div>
+              <div className="h-7 w-px bg-alabaster/10" />
+              <div>
+                <span className="block font-mono text-[9px] uppercase tracking-[0.16em] text-ink-subtle">
+                  Best
+                </span>
+                <span className="mt-0.5 block font-serif text-3xl text-sand-light">
+                  {String(bestScore).padStart(2, '0')}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-5 flex w-full items-center gap-2">
+              <button
+                type="button"
+                onClick={handleReplay}
+                className="flex-1 rounded-full bg-alabaster py-2 font-mono text-[9.5px] font-medium uppercase tracking-[0.16em] text-void transition-opacity hover:opacity-90"
+              >
+                Play Again
+              </button>
+              <button
+                type="button"
+                onClick={handleReturnToGlobe}
+                className="flex-1 rounded-full border border-alabaster/20 bg-transparent py-2 font-mono text-[9.5px] uppercase tracking-[0.16em] text-alabaster transition-colors hover:border-sand/50 hover:text-sand-light"
+              >
+                Globe
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Floating Pill: "Tap to beam" -> "Spin fast to play" -> Court Controls Hint */}
+      <div className="pointer-events-none absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
+        {isGlobeMode ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTrigger();
+            }}
+            className={`pointer-events-auto group flex items-center gap-2 rounded-full border px-3.5 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.65)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 ${
+              gamePhase === 'ready_to_spin'
+                ? fastSpinCount === 1
+                  ? 'border-sand bg-obsidian/95 ring-2 ring-sand/45'
+                  : 'border-sand bg-obsidian/95 ring-1 ring-sand/35'
+                : 'border-sand/35 bg-obsidian/90 hover:border-sand'
+            } ${tapPulsing ? 'border-sand bg-sand/25 scale-105 ring-2 ring-sand/40' : ''}`}
+            aria-label={
+              gamePhase === 'ready_to_spin'
+                ? `Spin the globe fast two times repeatedly to play basketball (${fastSpinCount} of 2)`
+                : 'Tap to shoot telemetry beam'
+            }
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sand opacity-80" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-sand" />
+            </span>
+            {gamePhase === 'ready_to_spin' ? (
+              <span className="flex items-center gap-2">
+                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-sand-light font-medium whitespace-nowrap transition-colors group-hover:text-alabaster">
+                  Spin fast to play
+                </span>
+                <span className="flex items-center gap-1" aria-hidden="true">
+                  {[0, 1].map((idx) => {
+                    const lit = idx < fastSpinCount;
+                    return (
+                      <span
+                        key={`spin-pip-${idx}`}
+                        className={`h-1.5 w-1.5 rounded-full transition-all duration-200 ${
+                          lit
+                            ? 'bg-sand scale-110 shadow-[0_0_6px_rgba(229,199,123,0.9)]'
+                            : 'border border-sand/45 bg-transparent opacity-60'
+                        }`}
+                      />
+                    );
+                  })}
+                </span>
+              </span>
+            ) : (
+              <>
+                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-sand-light font-medium transition-colors group-hover:text-alabaster">
+                  Tap
+                </span>
+                <span className="font-mono text-[9px] text-ink-subtle">
+                  to beam
+                </span>
+              </>
+            )}
+          </button>
+        ) : gamePhase === 'playing' ? (
+          <div className="rounded-full border border-alabaster/10 bg-obsidian/80 px-3 py-1 backdrop-blur-md">
+            <span className="font-mono text-[8.5px] sm:text-[9px] uppercase tracking-[0.16em] text-ink-subtle whitespace-nowrap">
+              Drag ← → to Aim · Swipe ↑ to Shoot
+            </span>
+          </div>
+        ) : null}
       </div>
     </div>
   );

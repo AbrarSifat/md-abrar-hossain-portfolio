@@ -46,10 +46,10 @@ export const ImpactSection: React.FC = () => {
   return (
     <section
       id="impact"
-      className="mx-auto max-w-[1360px] px-4 sm:px-6 py-20 sm:py-28 lg:py-36 lg:px-12"
+      className="mx-auto max-w-[1360px] px-4 sm:px-6 py-14 sm:py-28 lg:py-36 lg:px-12"
     >
       {/* Swiss 4 / 8 Asymmetric Executive Profile Grid */}
-      <div className="grid grid-cols-1 gap-12 lg:grid-cols-12 lg:gap-16">
+      <div className="grid grid-cols-1 gap-8 sm:gap-12 lg:grid-cols-12 lg:gap-16">
         {/* Left Column: Section Index + Authentic Editorial Portrait */}
         <div className="lg:col-span-4">
           <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-subtle">
@@ -61,7 +61,7 @@ export const ImpactSection: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.8 }}
-            className="mt-8 max-w-[290px]"
+            className="mt-6 sm:mt-8 max-w-[260px] sm:max-w-[290px]"
           >
             <div className="aspect-[4/5] w-full overflow-hidden border border-alabaster/[0.1] bg-obsidian">
               <img
@@ -100,7 +100,7 @@ export const ImpactSection: React.FC = () => {
           </motion.div>
 
           {/* 4 Pure Hairline Metrics (Zero Clunky Cards) */}
-          <div className="mt-16 grid grid-cols-2 gap-x-8 gap-y-12 border-t border-alabaster/[0.09] pt-12 sm:grid-cols-4">
+          <div className="mt-10 sm:mt-16 grid grid-cols-2 gap-x-5 gap-y-8 sm:gap-x-8 sm:gap-y-12 border-t border-alabaster/[0.09] pt-8 sm:pt-12 sm:grid-cols-4">
             {IMPACT_METRICS.map((item, idx) => (
               <motion.div
                 key={item.id}
@@ -112,7 +112,7 @@ export const ImpactSection: React.FC = () => {
                 <span className="block font-mono text-[10px] uppercase tracking-[0.18em] text-ink-faint">
                   0{idx + 1}
                 </span>
-                <div className="mt-3 text-4xl font-light tracking-[-0.04em] text-alabaster sm:text-5xl">
+                <div className="mt-2 sm:mt-3 text-3xl font-light tracking-[-0.04em] text-alabaster sm:text-5xl">
                   <AnimatedCounter
                     value={item.value}
                     prefix={item.prefix}

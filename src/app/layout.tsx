@@ -103,7 +103,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="bg-void text-alabaster antialiased selection:bg-alabaster selection:text-void overflow-x-hidden">
+      <body
+        suppressHydrationWarning
+        className="bg-void text-alabaster antialiased selection:bg-alabaster selection:text-void overflow-x-hidden"
+      >
         {children}
       </body>
     </html>

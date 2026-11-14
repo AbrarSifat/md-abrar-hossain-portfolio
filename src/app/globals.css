@@ -17,6 +17,10 @@
     --c-ink-muted: 161 161 170;    /* #A1A1AA */
     --c-ink-subtle: 113 113 122;   /* #71717A */
     --c-ink-faint: 82 82 91;       /* #52525B */
+    --logo-white: #F6F5F0;
+    --logo-champagne: #E2D7C1;
+    --logo-gold: #C8B89A;
+    --logo-bronze: #8E8068;
   }
 
   /* Quiet-Luxury Swiss Museum Paper Light Mode Tokens */
@@ -32,6 +36,10 @@
     --c-ink-muted: 82 82 91;       /* #52525B */
     --c-ink-subtle: 115 112 104;   /* #737068 */
     --c-ink-faint: 148 144 135;    /* #949087 */
+    --logo-white: #52525B;
+    --logo-champagne: #7A7A85;
+    --logo-gold: #987C4E;
+    --logo-bronze: #6B5B45;
   }
 
   html {
@@ -52,6 +60,11 @@
     -moz-osx-font-smoothing: grayscale;
     transition: background-color 0.45s cubic-bezier(0.16, 1, 0.3, 1),
                 color 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
   }
 
   .font-serif {
@@ -121,5 +134,15 @@ input[type='range'].apple-glass-slider::-moz-range-thumb {
   body {
     background: #ffffff !important;
     color: #000000 !important;
+  }
+}
+
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 }

@@ -1,11 +1,11 @@
 import type { MetadataRoute } from 'next';
-import { SITE_CONFIG } from '@/lib/site-config';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: SITE_CONFIG.title,
+    name: 'Md. Abrar Hossain — Business Relationship Manager & Project Leader',
     short_name: 'Abrar Hossain',
-    description: SITE_CONFIG.description,
+    description:
+      'Executive portfolio of Md. Abrar Hossain — Business Relationship Manager & Project Leader at CompileQ (London E1 ↔ Chattogram). Driving +50% B2B client retention, +50% agile delivery efficiency, and Automation360° UK hospitality ecosystems.',
     start_url: '/',
     display: 'standalone',
     background_color: '#09090B',

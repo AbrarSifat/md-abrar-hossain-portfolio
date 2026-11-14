@@ -16,9 +16,9 @@ export const TrajectorySection: React.FC = () => {
   return (
     <section
       id="trajectory"
-      className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-4 sm:px-6 py-20 sm:py-28 lg:py-36 lg:px-12"
+      className="mx-auto max-w-[1360px] border-t border-alabaster/[0.08] px-4 sm:px-6 py-14 sm:py-28 lg:py-36 lg:px-12"
     >
-      <div className="flex flex-col justify-between gap-8 pb-14 lg:flex-row lg:items-end">
+      <div className="flex flex-col justify-between gap-6 sm:gap-8 pb-8 sm:pb-14 lg:flex-row lg:items-end">
         <div>
           <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-subtle">
             04 — Experience
@@ -56,7 +56,7 @@ export const TrajectorySection: React.FC = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-40px' }}
             transition={{ duration: 0.6, delay: idx * 0.05 }}
-            className="grid grid-cols-1 gap-6 py-11 lg:grid-cols-12 lg:gap-10"
+            className="grid grid-cols-1 gap-4 sm:gap-6 py-8 sm:py-11 lg:grid-cols-12 lg:gap-10"
           >
             {/* Period & Location */}
             <div className="lg:col-span-3">
