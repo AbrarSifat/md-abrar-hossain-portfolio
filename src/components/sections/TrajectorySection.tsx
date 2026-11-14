@@ -21,7 +21,7 @@ export const TrajectorySection: React.FC = () => {
       <div className="flex flex-col justify-between gap-6 sm:gap-8 pb-8 sm:pb-14 lg:flex-row lg:items-end">
         <div>
           <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-subtle">
-            04 — Experience
+            05 — Experience
           </span>
           <h2 className="mt-4 text-3xl font-light tracking-[-0.03em] text-alabaster sm:text-5xl">
             Career{' '}

@@ -5,13 +5,14 @@ import { getPortfolioJsonLd } from '@/lib/seo-schema';
 import './globals.css';
 
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext', 'cyrillic', 'greek', 'vietnamese'],
+  weight: ['300', '400', '500', '600'],
   variable: '--font-inter',
   display: 'swap',
 });
 
 const cormorantGaramond = Cormorant_Garamond({
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext', 'cyrillic', 'vietnamese'],
   weight: ['300', '400', '500', '600', '700'],
   style: ['normal', 'italic'],
   variable: '--font-cormorant-garamond',

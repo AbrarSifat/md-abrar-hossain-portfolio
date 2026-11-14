@@ -53,7 +53,7 @@ export const Preloader: React.FC<{ onComplete: () => void }> = ({ onComplete }) 
         >
           <div className="flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.2em] text-ink-subtle">
             <span>Md. Abrar Hossain</span>
-            <span>Portfolio · 2026</span>
+            <span>Portfolio</span>
           </div>
 
           <div className="my-auto text-center">
@@ -63,7 +63,7 @@ export const Preloader: React.FC<{ onComplete: () => void }> = ({ onComplete }) 
           </div>
 
           <div className="flex items-center justify-between border-t border-alabaster/[0.08] pt-5 font-mono text-xs text-ink-muted">
-            <span>Chattogram ↔ London</span>
+            <span>Hello there!</span>
             <span className="tabular-nums text-alabaster">{String(progress).padStart(3, '0')}%</span>
           </div>
         </motion.div>

@@ -33,7 +33,7 @@ export const FooterSection: React.FC = () => {
           transition={{ duration: 0.8 }}
         >
           <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-subtle">
-            06 — Contact
+            08 — Contact
           </span>
 
           <h2 className="mt-5 max-w-3xl text-[clamp(2.25rem,5.5vw,5rem)] font-light leading-[1.05] tracking-[-0.035em] text-alabaster">

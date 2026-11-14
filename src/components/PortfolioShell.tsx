@@ -8,9 +8,12 @@ import { Preloader } from '@/components/Preloader';
 import { Navbar } from '@/components/Navbar';
 import { HeroSection } from '@/components/sections/HeroSection';
 import { ImpactSection } from '@/components/sections/ImpactSection';
-import { WorkSection } from '@/components/sections/WorkSection';
+import { WorkSection, CorridorSection } from '@/components/sections/WorkSection';
+import { GovernanceSection } from '@/components/sections/GovernanceSection';
 import { TrajectorySection } from '@/components/sections/TrajectorySection';
+import { OperationalArsenalSection } from '@/components/sections/OperationalArsenalSection';
 import { CredentialsSection } from '@/components/sections/CredentialsSection';
+import { ArtifactEggSection } from '@/components/sections/ArtifactEggSection';
 import { FooterSection } from '@/components/sections/FooterSection';
 import { AiBriefModal } from '@/components/AiBriefModal';
 import { sounds } from '@/lib/sound';
@@ -107,8 +110,12 @@ export const PortfolioShell: React.FC = () => {
           <HeroSection />
           <ImpactSection />
           <WorkSection />
+          <GovernanceSection />
+          <CorridorSection />
           <TrajectorySection />
+          <OperationalArsenalSection />
           <CredentialsSection />
+          <ArtifactEggSection />
         </main>
 
         <FooterSection />

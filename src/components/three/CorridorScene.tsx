@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
+import { motion, AnimatePresence } from 'framer-motion';
 import * as THREE from 'three';
 import { useTheme, type ThemeMode } from '@/components/ThemeProvider';
 import { sounds } from '@/lib/sound';
@@ -22,11 +23,19 @@ const smooth = (x: number) => {
   const c = clamp01(x);
   return c * c * (3 - 2 * c);
 };
+const smootherstep = (x: number) => {
+  const c = clamp01(x);
+  return c * c * c * (c * (c * 6 - 15) + 10);
+};
 const easeOutCubic = (x: number) => {
   const c = clamp01(x);
   return 1 - Math.pow(1 - c, 3);
 };
 const span = (t: number, a: number, b: number) => clamp01((t - a) / (b - a));
+
+const COURT_CAM_POS = new THREE.Vector3(0, 0.02, 5.15);
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+const GLOBE_ORIGIN = new THREE.Vector3(0, 0, 0);
 
 /* ------------------------------------------------------------------ */
 /* Executive Radar Ping — 4s telemetry cadence + instant manual tap   */
@@ -125,6 +134,18 @@ interface GlobeSpinTracker {
   lastFastSpinAt: number;
 }
 
+const COURT_FIT_DIVISOR = 3.0;
+const COURT_BALL_R = 0.256;
+const COURT_HOOP_SCALE = 1.065;
+const COURT_LAUNCH_Y = -0.9;
+const COURT_LAUNCH_Z = 0.42;
+const COURT_HOOP_Y = 0.66;
+const COURT_HOOP_Z = -0.45;
+
+function computeCourtFitScale(width: number, height: number): number {
+  return Math.min(1, Math.min(width, height) / COURT_FIT_DIVISOR);
+}
+
 function MinimalistSculpture({
   isLight,
   gamePhase,
@@ -145,8 +166,15 @@ function MinimalistSculpture({
   const ringARef = useRef<THREE.Mesh>(null);
   const ringBRef = useRef<THREE.Mesh>(null);
   const ringCRef = useRef<THREE.Mesh>(null);
+  const ringAMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const ringBMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const ringCMatRef = useRef<THREE.MeshBasicMaterial>(null);
+  const landDotsMatRef = useRef<THREE.PointsMaterial>(null);
+  const oceanDotsMatRef = useRef<THREE.PointsMaterial>(null);
+  const originCoreMatRef = useRef<THREE.MeshBasicMaterial>(null);
   const morphTimeRef = useRef(0);
   const transitionDoneRef = useRef(false);
+  const embellishFadeRef = useRef(1);
   const spinVelRef = useRef(0);
   const extraRotYRef = useRef(0);
 
@@ -169,6 +197,10 @@ function MinimalistSculpture({
   const rawFitScale = Math.min(viewport.width, viewport.height) / 3.46;
   const fitScale =
     Number.isFinite(rawFitScale) && rawFitScale > 0.1 ? Math.min(1, rawFitScale) : 0.85;
+  const rawCourtFitScale = computeCourtFitScale(viewport.width, viewport.height);
+  const courtFitScale =
+    Number.isFinite(rawCourtFitScale) && rawCourtFitScale > 0.1 ? rawCourtFitScale : 0.85;
+  const targetBallScale = courtFitScale * (COURT_BALL_R / R);
 
   const { originPos, hubPositions, arcs, landDotPositions, oceanDotPositions } = useMemo(() => {
     const origin = latLonToVec3(ORIGIN.lat, ORIGIN.lon, R);
@@ -222,6 +254,57 @@ function MinimalistSculpture({
     });
   }, [onRegisterTrigger]);
 
+  const palette = isLight
+    ? {
+        coreColor: '#EAE5DC',
+        coreRoughness: 0.6,
+        landDotColor: '#2C261F',
+        landDotOpacity: 0.92,
+        landDotSize: 0.015,
+        oceanDotColor: '#ABA090',
+        oceanDotOpacity: 0.22,
+        oceanDotSize: 0.0075,
+        originCore: '#D89A38',
+        originBeacon: '#C88828',
+        hubCore: '#222225',
+        glowColor: '#C88828',
+        ringPrimary: '#A6987E',
+        ringAccent: '#D89A38',
+        ringAOpacity: 0.45,
+        ringBOpacity: 0.35,
+        ringCOpacity: 0.25,
+      }
+    : {
+        coreColor: '#070709',
+        coreRoughness: 0.35,
+        landDotColor: '#E2D4B7',
+        landDotOpacity: 0.78,
+        landDotSize: 0.0125,
+        oceanDotColor: '#6E6455',
+        oceanDotOpacity: 0.18,
+        oceanDotSize: 0.007,
+        originCore: '#F2D272',
+        originBeacon: '#E5C77B',
+        hubCore: '#F4F3EF',
+        glowColor: '#E5C77B',
+        ringPrimary: '#F4F3EF',
+        ringAccent: '#E5C77B',
+        ringAOpacity: 0.38,
+        ringBOpacity: 0.28,
+        ringCOpacity: 0.2,
+      };
+
+  const glowBlending = isLight ? THREE.NormalBlending : THREE.AdditiveBlending;
+
+  const applyEmbellishFade = (fade: number) => {
+    if (landDotsMatRef.current) landDotsMatRef.current.opacity = palette.landDotOpacity * fade;
+    if (oceanDotsMatRef.current) oceanDotsMatRef.current.opacity = palette.oceanDotOpacity * fade;
+    if (originCoreMatRef.current) originCoreMatRef.current.opacity = fade;
+    if (ringAMatRef.current) ringAMatRef.current.opacity = palette.ringAOpacity * fade;
+    if (ringBMatRef.current) ringBMatRef.current.opacity = palette.ringBOpacity * fade;
+    if (ringCMatRef.current) ringCMatRef.current.opacity = palette.ringCOpacity * fade;
+  };
+
   useFrame(({ clock, pointer }, delta) => {
     const dt = Math.min(delta, 0.05);
     const t = clock.getElapsedTime();
@@ -230,23 +313,41 @@ function MinimalistSculpture({
       if (gamePhase === 'spinning_transition') {
         outerGroupRef.current.visible = true;
         morphTimeRef.current += dt;
-        const p = clamp01(morphTimeRef.current / 1.08);
-        // Hold full-size rapid spin for the first 28% so user clearly sees the globe spinning, then shrink into the basketball
-        const shrinkP = clamp01((p - 0.24) / 0.76);
-        const eased = easeOutCubic(shrinkP);
+        const p = clamp01(morphTimeRef.current / 1.0);
+        // Continuous smootherstep descent + gentle spin deceleration down to basketball launch speed
+        const descendEased = smootherstep(clamp01((p - 0.08) / 0.88));
+        const spinFade = 1 - smootherstep(clamp01((p - 0.42) / 0.54));
+        const embellishFade = 1 - smootherstep(clamp01((p - 0.16) / 0.68));
+        embellishFadeRef.current = embellishFade;
 
         if (groupRef.current) {
-          groupRef.current.rotation.y += dt * (28 * (1 - shrinkP * 0.25));
-          groupRef.current.rotation.x += dt * 8.5;
+          groupRef.current.rotation.y += dt * (2.2 + 22 * spinFade);
+          groupRef.current.rotation.x += dt * (1.2 + 6.5 * spinFade);
         }
 
-        const scaleNow = fitScale * THREE.MathUtils.lerp(1, 0.178, eased);
+        const scaleNow = THREE.MathUtils.lerp(fitScale, targetBallScale, descendEased);
         outerGroupRef.current.scale.setScalar(scaleNow);
         outerGroupRef.current.position.set(
           0,
-          THREE.MathUtils.lerp(0, -1.04 * fitScale, eased),
-          THREE.MathUtils.lerp(0, 0.42 * fitScale, eased)
+          THREE.MathUtils.lerp(0, COURT_LAUNCH_Y * courtFitScale, descendEased),
+          THREE.MathUtils.lerp(0, COURT_LAUNCH_Z * courtFitScale, descendEased)
         );
+
+        applyEmbellishFade(embellishFade);
+        if (packetRef.current) packetRef.current.visible = false;
+        if (arcRef.current) arcRef.current.visible = embellishFade > 0.01;
+        if (arcMatRef.current) {
+          arcMatRef.current.opacity = (isLight ? 0.82 : 0.88) * embellishFade;
+        }
+        if (originHaloMatRef.current) {
+          originHaloMatRef.current.opacity = (isLight ? 0.16 : 0.22) * embellishFade;
+        }
+        hubCoreMatRefs.current.forEach((m) => {
+          if (m) m.opacity = 0.7 * embellishFade;
+        });
+        hubHaloMatRefs.current.forEach((m) => {
+          if (m) m.opacity = (isLight ? 0.08 : 0.12) * embellishFade;
+        });
 
         if (p >= 1 && !transitionDoneRef.current) {
           transitionDoneRef.current = true;
@@ -264,13 +365,15 @@ function MinimalistSculpture({
       outerGroupRef.current.visible = true;
       morphTimeRef.current = 0;
       transitionDoneRef.current = false;
+      embellishFadeRef.current = THREE.MathUtils.lerp(embellishFadeRef.current, 1, 0.14);
+      applyEmbellishFade(embellishFadeRef.current);
       const curScale = Number.isFinite(outerGroupRef.current.scale.x)
         ? outerGroupRef.current.scale.x
         : fitScale;
       outerGroupRef.current.scale.setScalar(
         THREE.MathUtils.lerp(curScale, fitScale, 0.14)
       );
-      outerGroupRef.current.position.lerp(new THREE.Vector3(0, 0, 0), 0.14);
+      outerGroupRef.current.position.lerp(GLOBE_ORIGIN, 0.14);
     }
 
     if (groupRef.current) {
@@ -317,7 +420,7 @@ function MinimalistSculpture({
 
     if (arcMatRef.current) {
       const baseAlpha = isLight ? 0.82 : 0.88;
-      arcMatRef.current.opacity = baseAlpha * (1 - dissolveP);
+      arcMatRef.current.opacity = baseAlpha * (1 - dissolveP) * embellishFadeRef.current;
     }
     if (arcRef.current) arcRef.current.visible = head > tail && dissolveP < 1;
 
@@ -330,7 +433,8 @@ function MinimalistSculpture({
         const eased = pP < 0.5 ? 2 * pP * pP : 1 - Math.pow(-2 * pP + 2, 2) / 2;
         packetRef.current.position.copy(curve.getPointAt(eased));
         if (packetGlowMatRef.current) {
-          packetGlowMatRef.current.opacity = (isLight ? 0.3 : 0.45) * Math.sin(pP * Math.PI);
+          packetGlowMatRef.current.opacity =
+            (isLight ? 0.3 : 0.45) * Math.sin(pP * Math.PI) * embellishFadeRef.current;
         }
       }
     }
@@ -340,7 +444,9 @@ function MinimalistSculpture({
     const breath = 0.5 + 0.5 * Math.sin(t * 1.5);
     if (originHaloRef.current) originHaloRef.current.scale.setScalar(1.5 + breath * 0.8 + launchKick * 1.2);
     if (originHaloMatRef.current) {
-      originHaloMatRef.current.opacity = (isLight ? 0.16 : 0.22) * (0.6 + breath * 0.4) + launchKick * 0.2;
+      originHaloMatRef.current.opacity =
+        ((isLight ? 0.16 : 0.22) * (0.6 + breath * 0.4) + launchKick * 0.2) *
+        embellishFadeRef.current;
     }
 
     // Hubs: subtle staggered twinkle across all 15 nodes + target flashes
@@ -356,8 +462,14 @@ function MinimalistSculpture({
         flash = Math.max(inF * 0.75, impact);
       }
       if (halo) halo.scale.setScalar(1 + twinkle * 0.25 + flash * 2.4);
-      if (haloMat) haloMat.opacity = (isLight ? 0.08 : 0.12) + twinkle * 0.05 + flash * (isLight ? 0.38 : 0.58);
-      if (coreMat) coreMat.opacity = 0.55 + twinkle * 0.18 + flash * 0.35;
+      if (haloMat) {
+        haloMat.opacity =
+          ((isLight ? 0.08 : 0.12) + twinkle * 0.05 + flash * (isLight ? 0.38 : 0.58)) *
+          embellishFadeRef.current;
+      }
+      if (coreMat) {
+        coreMat.opacity = (0.55 + twinkle * 0.18 + flash * 0.35) * embellishFadeRef.current;
+      }
     });
 
     if (ringARef.current) {
@@ -373,48 +485,6 @@ function MinimalistSculpture({
       ringCRef.current.rotation.z = t * 0.03;
     }
   });
-
-  const palette = isLight
-    ? {
-        coreColor: '#EAE5DC',
-        coreRoughness: 0.6,
-        landDotColor: '#2C261F',
-        landDotOpacity: 0.92,
-        landDotSize: 0.015,
-        oceanDotColor: '#ABA090',
-        oceanDotOpacity: 0.22,
-        oceanDotSize: 0.0075,
-        originCore: '#D89A38',
-        originBeacon: '#C88828',
-        hubCore: '#222225',
-        glowColor: '#C88828',
-        ringPrimary: '#A6987E',
-        ringAccent: '#D89A38',
-        ringAOpacity: 0.45,
-        ringBOpacity: 0.35,
-        ringCOpacity: 0.25,
-      }
-    : {
-        coreColor: '#070709',
-        coreRoughness: 0.35,
-        landDotColor: '#E2D4B7',
-        landDotOpacity: 0.78,
-        landDotSize: 0.0125,
-        oceanDotColor: '#6E6455',
-        oceanDotOpacity: 0.18,
-        oceanDotSize: 0.007,
-        originCore: '#F2D272',
-        originBeacon: '#E5C77B',
-        hubCore: '#F4F3EF',
-        glowColor: '#E5C77B',
-        ringPrimary: '#F4F3EF',
-        ringAccent: '#E5C77B',
-        ringAOpacity: 0.38,
-        ringBOpacity: 0.28,
-        ringCOpacity: 0.2,
-      };
-
-  const glowBlending = isLight ? THREE.NormalBlending : THREE.AdditiveBlending;
 
   return (
     <group ref={outerGroupRef} scale={fitScale}>
@@ -438,6 +508,7 @@ function MinimalistSculpture({
             />
           </bufferGeometry>
           <pointsMaterial
+            ref={landDotsMatRef}
             size={palette.landDotSize}
             color={palette.landDotColor}
             transparent
@@ -456,6 +527,7 @@ function MinimalistSculpture({
             />
           </bufferGeometry>
           <pointsMaterial
+            ref={oceanDotsMatRef}
             size={palette.oceanDotSize}
             color={palette.oceanDotColor}
             transparent
@@ -500,7 +572,12 @@ function MinimalistSculpture({
         <group position={originPos}>
           <mesh>
             <sphereGeometry args={[0.024, 20, 20]} />
-            <meshBasicMaterial color={palette.originCore} />
+            <meshBasicMaterial
+              ref={originCoreMatRef}
+              color={palette.originCore}
+              transparent
+              opacity={1}
+            />
           </mesh>
           <mesh ref={originHaloRef}>
             <sphereGeometry args={[0.046, 20, 20]} />
@@ -552,15 +629,15 @@ function MinimalistSculpture({
         {/* Architectural Hairline Gyroscope Rings */}
         <mesh ref={ringARef}>
           <torusGeometry args={[R * 1.18, 0.0022, 16, 180]} />
-          <meshBasicMaterial color={palette.ringPrimary} transparent opacity={palette.ringAOpacity} />
+          <meshBasicMaterial ref={ringAMatRef} color={palette.ringPrimary} transparent opacity={palette.ringAOpacity} />
         </mesh>
         <mesh ref={ringBRef}>
           <torusGeometry args={[R * 1.27, 0.0018, 16, 180]} />
-          <meshBasicMaterial color={palette.ringAccent} transparent opacity={palette.ringBOpacity} />
+          <meshBasicMaterial ref={ringBMatRef} color={palette.ringAccent} transparent opacity={palette.ringBOpacity} />
         </mesh>
         <mesh ref={ringCRef}>
           <torusGeometry args={[R * 1.09, 0.0016, 16, 180]} />
-          <meshBasicMaterial color={palette.ringPrimary} transparent opacity={palette.ringCOpacity} />
+          <meshBasicMaterial ref={ringCMatRef} color={palette.ringPrimary} transparent opacity={palette.ringCOpacity} />
         </mesh>
       </group>
     </group>
@@ -678,9 +755,9 @@ function BasketballCourt3D({
   onMiss: () => void;
 }) {
   const { viewport, camera } = useThree();
-  const rawFitScale = Math.min(viewport.width, viewport.height) / 3.46;
+  const rawFitScale = computeCourtFitScale(viewport.width, viewport.height);
   const fitScale =
-    Number.isFinite(rawFitScale) && rawFitScale > 0.1 ? Math.min(1, rawFitScale) : 0.85;
+    Number.isFinite(rawFitScale) && rawFitScale > 0.1 ? rawFitScale : 0.85;
 
   const courtGroupRef = useRef<THREE.Group>(null);
   const hoopGroupRef = useRef<THREE.Group>(null);
@@ -718,14 +795,14 @@ function BasketballCourt3D({
     bounced: false,
     bounceVx: 0,
     bounceVy: 0,
-    pos: new THREE.Vector3(0, -1.04, 0.42),
+    pos: new THREE.Vector3(0, COURT_LAUNCH_Y, COURT_LAUNCH_Z),
   });
 
-  const BALL_R = 0.24;
-  const LAUNCH_Y = -1.04;
-  const LAUNCH_Z = 0.42;
-  const HOOP_Y = 0.62;
-  const HOOP_Z = -0.45;
+  const BALL_R = COURT_BALL_R;
+  const LAUNCH_Y = COURT_LAUNCH_Y;
+  const LAUNCH_Z = COURT_LAUNCH_Z;
+  const HOOP_Y = COURT_HOOP_Y;
+  const HOOP_Z = COURT_HOOP_Z;
   const FLIGHT_DURATION = 0.56;
 
   const { seamPositions, backboardPositions, netPositions } = useMemo(
@@ -742,13 +819,15 @@ function BasketballCourt3D({
     if (gamePhase === 'spinning_transition') {
       difficultyRef.current = 0;
       transitionElapsedRef.current = 0;
+      hoopPhaseRef.current = 0;
+      hoopXRef.current = 0;
       flightRef.current.state = 'ready';
       flightRef.current.time = 0;
       controlRef.current.ballX = 0;
       controlRef.current.targetBallX = 0;
       controlRef.current.pendingThrow = null;
       if (hoopGroupRef.current) {
-        hoopGroupRef.current.position.set(0, 1.38, HOOP_Z);
+        hoopGroupRef.current.position.set(0, 2.55, HOOP_Z);
       }
     }
   }, [gamePhase, controlRef, HOOP_Z]);
@@ -762,8 +841,8 @@ function BasketballCourt3D({
       !Number.isFinite(camera.position.y) ||
       !Number.isFinite(camera.position.z)
     ) {
-      camera.position.set(0, 0.02, 5.15);
-      camera.up.set(0, 1, 0);
+      camera.position.copy(COURT_CAM_POS);
+      camera.up.copy(WORLD_UP);
       camera.lookAt(0, 0, 0);
     }
 
@@ -782,24 +861,37 @@ function BasketballCourt3D({
       transitionElapsedRef.current += dt;
     }
 
-    // Smoothly align camera straight-on with the court after any globe orbit rotation
-    camera.position.lerp(new THREE.Vector3(0, 0.02, 5.15), 0.16);
-    camera.up.lerp(new THREE.Vector3(0, 1, 0), 0.16);
+    // Spherically align camera straight-on with the court after any globe orbit rotation
+    const camDist = camera.position.length() || 5.15;
+    camera.position.lerp(COURT_CAM_POS, 0.14);
+    if (camera.position.lengthSq() > 0.001) {
+      camera.position.setLength(THREE.MathUtils.lerp(camDist, 5.15, 0.14));
+    }
+    camera.up.lerp(WORLD_UP, 0.16).normalize();
     camera.lookAt(0, 0, 0);
 
-    // 1. Move Hoop Left <-> Right continuously
+    // 1. Move Hoop Left <-> Right continuously (glides smoothly in from top during transition)
     const speed = 1.08 + Math.min(difficultyRef.current * 0.09, 0.9);
-    hoopPhaseRef.current += dt * (gamePhase === 'spinning_transition' ? speed * 0.65 : speed);
+    hoopPhaseRef.current += dt * (gamePhase === 'spinning_transition' ? speed * 0.55 : speed);
     const maxHoopX = 0.92;
-    hoopXRef.current = Math.sin(hoopPhaseRef.current) * maxHoopX;
+    const swayScale =
+      gamePhase === 'spinning_transition'
+        ? smootherstep(clamp01((transitionElapsedRef.current - 0.52) / 0.45))
+        : 1;
+    hoopXRef.current = Math.sin(hoopPhaseRef.current) * maxHoopX * swayScale;
 
     if (hoopGroupRef.current) {
       hoopGroupRef.current.position.x = hoopXRef.current;
-      hoopGroupRef.current.position.y = THREE.MathUtils.lerp(
-        hoopGroupRef.current.position.y,
-        HOOP_Y,
-        0.11
-      );
+      if (gamePhase === 'spinning_transition') {
+        const dropEased = smootherstep(clamp01((transitionElapsedRef.current - 0.1) / 0.78));
+        hoopGroupRef.current.position.y = THREE.MathUtils.lerp(2.55, HOOP_Y, dropEased);
+      } else {
+        hoopGroupRef.current.position.y = THREE.MathUtils.lerp(
+          hoopGroupRef.current.position.y,
+          HOOP_Y,
+          0.16
+        );
+      }
       hoopGroupRef.current.position.z = HOOP_Z;
     }
 
@@ -831,7 +923,10 @@ function BasketballCourt3D({
       }
     } else {
       if (shockwaveRef.current) shockwaveRef.current.visible = false;
-      if (rimMatRef.current) rimMatRef.current.emissiveIntensity = isLight ? 0.08 : 0.16;
+      if (rimMatRef.current) {
+        rimMatRef.current.emissive.set(isLight ? '#C49A3E' : '#E5C77B');
+        rimMatRef.current.emissiveIntensity = isLight ? 0.28 : 0.16;
+      }
     }
 
     // 3. Basketball Position, Throw Flight, & Collision Physics
@@ -859,12 +954,7 @@ function BasketballCourt3D({
         ballMeshGroupRef.current.rotation.y += dt * (gamePhase === 'spinning_transition' ? 22 : 0.75);
       }
       if (ballGroupRef.current) {
-        // Scale basketball in cleanly as the spinning globe morphs down into it
-        const morphIn =
-          gamePhase === 'spinning_transition'
-            ? easeOutCubic(clamp01((transitionElapsedRef.current - 0.32) / 0.68))
-            : 1;
-        ballGroupRef.current.scale.setScalar(Math.max(0.001, morphIn));
+        ballGroupRef.current.scale.setScalar(1);
       }
     } else if (fl.state === 'flying') {
       fl.time += dt;
@@ -891,7 +981,7 @@ function BasketballCourt3D({
         const dx = curX - hoopXRef.current;
         const absDx = Math.abs(dx);
 
-        if (absDx <= 0.165) {
+        if (absDx <= 0.165 * COURT_HOOP_SCALE) {
           // Pure Swish
           fl.scored = true;
           fl.state = 'resolving';
@@ -901,7 +991,7 @@ function BasketballCourt3D({
           effectFlashRef.current = { timer: 1, color: '#F2D272' };
           sounds.playBasketballSwish();
           onScore(true);
-        } else if (absDx <= 0.275) {
+        } else if (absDx <= 0.275 * COURT_HOOP_SCALE) {
           // Rim-In / Bank Shot
           fl.scored = true;
           fl.state = 'resolving';
@@ -917,7 +1007,7 @@ function BasketballCourt3D({
           fl.scored = false;
           fl.state = 'resolving';
           fl.time = 0;
-          fl.bounced = absDx <= 0.44;
+          fl.bounced = absDx <= 0.44 * COURT_HOOP_SCALE;
           fl.bounceVx = fl.bounced ? Math.sign(dx || 1) * 1.45 : fl.vx * 0.6;
           fl.bounceVy = fl.bounced ? 0.55 : -1.2;
           effectFlashRef.current = { timer: 1, color: '#EF4444' };
@@ -970,8 +1060,8 @@ function BasketballCourt3D({
     });
   });
 
-  const frameBarColor = isLight ? '#5A4A36' : '#C8B89A';
-  const targetSquareColor = isLight ? '#B87824' : '#E5C77B';
+  const frameBarColor = isLight ? '#27272A' : '#C8B89A';
+  const targetSquareColor = isLight ? '#C69D45' : '#E5C77B';
 
   return (
     <group
@@ -984,16 +1074,18 @@ function BasketballCourt3D({
       }
     >
       {/* Moving Architectural Hoop Assembly */}
-      <group ref={hoopGroupRef} position={[0, 1.38, HOOP_Z]}>
-        {/* Smoked Glass Backboard Panel */}
+      <group ref={hoopGroupRef} position={[0, 2.55, HOOP_Z]} scale={COURT_HOOP_SCALE}>
+        {/* Smoked Glass / Frosted Pearl Crystal Backboard Panel */}
         <mesh position={[0, 0.25, -0.33]}>
           <boxGeometry args={[1.16, 0.72, 0.018]} />
           <meshStandardMaterial
-            color={isLight ? '#E2DDD2' : '#121216'}
-            roughness={0.28}
-            metalness={0.25}
+            color={isLight ? '#FFFFFF' : '#121216'}
+            emissive={isLight ? '#F6F5F0' : '#000000'}
+            emissiveIntensity={isLight ? 0.45 : 0}
+            roughness={isLight ? 0.14 : 0.28}
+            metalness={isLight ? 0.04 : 0.25}
             transparent
-            opacity={isLight ? 0.88 : 0.72}
+            opacity={isLight ? 0.62 : 0.72}
           />
         </mesh>
 
@@ -1042,9 +1134,9 @@ function BasketballCourt3D({
             />
           </bufferGeometry>
           <lineBasicMaterial
-            color={frameBarColor}
+            color={isLight ? '#52525B' : frameBarColor}
             transparent
-            opacity={0.85}
+            opacity={isLight ? 0.55 : 0.85}
           />
         </lineSegments>
 
@@ -1052,21 +1144,21 @@ function BasketballCourt3D({
         <mesh position={[0, 0.02, -0.31]}>
           <boxGeometry args={[0.15, 0.055, 0.065]} />
           <meshStandardMaterial
-            color={isLight ? '#8C6226' : '#C8B89A'}
-            metalness={0.6}
-            roughness={0.3}
+            color={isLight ? '#27272A' : '#C8B89A'}
+            metalness={isLight ? 0.35 : 0.6}
+            roughness={isLight ? 0.45 : 0.3}
           />
         </mesh>
 
-        {/* Metallic Champagne-Gold / Copper Rim */}
+        {/* Metallic Champagne-Gold Rim */}
         <mesh rotation={[Math.PI / 2 + 0.14, 0, 0]}>
           <torusGeometry args={[0.32, 0.019, 16, 64]} />
           <meshStandardMaterial
             ref={rimMatRef}
-            color={isLight ? '#C9831D' : '#E5C77B'}
-            emissive={isLight ? '#C9831D' : '#E5C77B'}
-            emissiveIntensity={isLight ? 0.08 : 0.16}
-            metalness={0.72}
+            color={isLight ? '#DCBA66' : '#E5C77B'}
+            emissive={isLight ? '#C49A3E' : '#E5C77B'}
+            emissiveIntensity={isLight ? 0.28 : 0.16}
+            metalness={isLight ? 0.48 : 0.72}
             roughness={0.22}
           />
         </mesh>
@@ -1076,7 +1168,7 @@ function BasketballCourt3D({
           <ringGeometry args={[0.33, 0.37, 48]} />
           <meshBasicMaterial
             ref={shockwaveMatRef}
-            color="#F2D272"
+            color={isLight ? '#D4AF5A' : '#F2D272'}
             side={THREE.DoubleSide}
             transparent
             opacity={0.8}
@@ -1093,26 +1185,26 @@ function BasketballCourt3D({
               />
             </bufferGeometry>
             <lineBasicMaterial
-              color={isLight ? '#4A3F32' : '#E8DAC0'}
+              color={isLight ? '#71717A' : '#E8DAC0'}
               transparent
-              opacity={isLight ? 0.82 : 0.72}
+              opacity={isLight ? 0.68 : 0.72}
             />
           </lineSegments>
           {/* Mid & Bottom Net Rings for crisp 3D definition */}
           <mesh position={[0, -0.18, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <torusGeometry args={[0.245, 0.0045, 8, 36]} />
             <meshBasicMaterial
-              color={isLight ? '#6B5B47' : '#C8B89A'}
+              color={isLight ? '#52525B' : '#C8B89A'}
               transparent
-              opacity={0.55}
+              opacity={isLight ? 0.58 : 0.55}
             />
           </mesh>
           <mesh position={[0, -0.36, 0]} rotation={[Math.PI / 2, 0, 0]}>
             <torusGeometry args={[0.18, 0.005, 8, 36]} />
             <meshBasicMaterial
-              color={isLight ? '#6B5B47' : '#C8B89A'}
+              color={isLight ? '#52525B' : '#C8B89A'}
               transparent
-              opacity={0.65}
+              opacity={isLight ? 0.62 : 0.65}
             />
           </mesh>
         </group>
@@ -1129,38 +1221,43 @@ function BasketballCourt3D({
         >
           <sphereGeometry args={[0.024 * (1 - idx * 0.08), 12, 12]} />
           <meshBasicMaterial
-            color={isLight ? '#B87824' : '#E5C77B'}
+            color={isLight ? '#C69E4B' : '#E5C77B'}
             transparent
-            opacity={0.75 - idx * 0.07}
+            opacity={0.82 - idx * 0.08}
           />
         </mesh>
       ))}
 
       {/* The Luxury Tactile 3D Basketball */}
-      <group ref={ballGroupRef} position={[0, LAUNCH_Y, LAUNCH_Z]}>
+      <group
+        ref={ballGroupRef}
+        position={[0, LAUNCH_Y, LAUNCH_Z]}
+        visible={gamePhase === 'playing' || gamePhase === 'game_over'}
+      >
         <group ref={ballMeshGroupRef}>
           <mesh>
             <sphereGeometry args={[BALL_R, 48, 48]} />
             <meshStandardMaterial
-              color={isLight ? '#C85E22' : '#2D1A10'}
-              emissive={isLight ? '#5A2408' : '#1A0E08'}
-              emissiveIntensity={0.22}
-              roughness={0.38}
-              metalness={0.22}
+              color={isLight ? '#EFECE6' : '#2D1A10'}
+              emissive={isLight ? '#D6D2C9' : '#1A0E08'}
+              emissiveIntensity={isLight ? 0.3 : 0.22}
+              roughness={isLight ? 0.34 : 0.38}
+              metalness={isLight ? 0.08 : 0.22}
             />
           </mesh>
 
           {/* 3D Sculpted Equatorial & Meridian Seam Rings */}
-          <mesh rotation={[Math.PI / 2, 0, 0]}>
-            <torusGeometry args={[BALL_R * 1.003, 0.0065, 10, 64]} />
-            <meshBasicMaterial color={isLight ? '#23160E' : '#E5C77B'} />
-          </mesh>
-          <mesh rotation={[0, Math.PI / 2, 0]}>
-            <torusGeometry args={[BALL_R * 1.003, 0.0065, 10, 64]} />
-            <meshBasicMaterial color={isLight ? '#23160E' : '#E5C77B'} />
-          </mesh>
+          {[
+            [Math.PI / 2, 0, 0] as const,
+            [0, Math.PI / 2, 0] as const,
+          ].map((rot, idx) => (
+            <mesh key={`ball-seam-ring-${idx}`} rotation={rot}>
+              <torusGeometry args={[BALL_R * 1.003, isLight ? 0.0036 : 0.0065, 10, 64]} />
+              <meshBasicMaterial color={isLight ? '#232328' : '#E5C77B'} />
+            </mesh>
+          ))}
 
-          {/* 8-Panel Gold / Espresso Basketball Saddle Seam Ribs */}
+          {/* 8-Panel Basketball Saddle Seam Ribs */}
           <lineSegments>
             <bufferGeometry>
               <bufferAttribute
@@ -1169,7 +1266,7 @@ function BasketballCourt3D({
               />
             </bufferGeometry>
             <lineBasicMaterial
-              color={isLight ? '#23160E' : '#F2D272'}
+              color={isLight ? '#232328' : '#F2D272'}
               transparent
               opacity={0.95}
             />
@@ -1178,12 +1275,12 @@ function BasketballCourt3D({
 
         {/* Subtle Launch Pad Ground Ring */}
         <mesh position={[0, -BALL_R - 0.04, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <ringGeometry args={[0.26, 0.29, 36]} />
+          <ringGeometry args={[0.278, 0.31, 36]} />
           <meshBasicMaterial
-            color={isLight ? '#8A765A' : '#C8B89A'}
+            color={isLight ? '#B89548' : '#C8B89A'}
             side={THREE.DoubleSide}
             transparent
-            opacity={isLight ? 0.55 : 0.36}
+            opacity={isLight ? 0.65 : 0.36}
           />
         </mesh>
       </group>
@@ -1199,7 +1296,10 @@ function CanvasTouchActionSync({ touchAction }: { touchAction: 'pan-y' | 'none' 
   return null;
 }
 
-export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOverride }) => {
+export const CorridorScene: React.FC<{
+  modeOverride?: ThemeMode;
+  onCourtActiveChange?: (active: boolean) => void;
+}> = ({ modeOverride, onCourtActiveChange }) => {
   const { theme } = useTheme();
   const isLight = (modeOverride ?? theme) === 'light';
   const triggerFnRef = useRef<(() => void) | null>(null);
@@ -1212,6 +1312,15 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
   const [lives, setLives] = useState(3);
   const [shotEvent, setShotEvent] = useState<ShotEvent | null>(null);
   const [fastSpinCount, setFastSpinCount] = useState(0);
+
+  const isCourtActive =
+    gamePhase === 'spinning_transition' ||
+    gamePhase === 'playing' ||
+    gamePhase === 'game_over';
+
+  useEffect(() => {
+    onCourtActiveChange?.(isCourtActive);
+  }, [isCourtActive, onCourtActiveChange]);
 
   const [tapPulsing, setTapPulsing] = useState(false);
   const [globeHitEl, setGlobeHitEl] = useState<HTMLDivElement | null>(null);
@@ -1469,18 +1578,18 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
     const tanHalfFov = Math.tan(THREE.MathUtils.degToRad(39 / 2));
     const vpH = 2 * 5.15 * tanHalfFov;
     const vpW = vpH * aspect;
-    const fitScale = Math.min(1, Math.min(vpW, vpH) / 3.46);
+    const fitScale = computeCourtFitScale(vpW, vpH);
 
-    const launchDist = 5.15 - 0.42 * fitScale;
-    const hoopDist = 5.15 - -0.45 * fitScale;
+    const launchDist = 5.15 - COURT_LAUNCH_Z * fitScale;
+    const hoopDist = 5.15 - COURT_HOOP_Z * fitScale;
     const halfHLaunch = launchDist * tanHalfFov;
     const halfHHoop = hoopDist * tanHalfFov;
 
     const pxPerWorldXLaunch = safeW / ((2 * halfHLaunch * aspect) / fitScale);
     const pxPerWorldXHoop = safeW / ((2 * halfHHoop * aspect) / fitScale);
 
-    const ballScreenY = ((1 - (-1.04 * fitScale - 0.02) / halfHLaunch) * 0.5) * safeH;
-    const hoopScreenY = ((1 - (0.62 * fitScale - 0.02) / halfHHoop) * 0.5) * safeH;
+    const ballScreenY = ((1 - (COURT_LAUNCH_Y * fitScale - 0.02) / halfHLaunch) * 0.5) * safeH;
+    const hoopScreenY = ((1 - (COURT_HOOP_Y * fitScale - 0.02) / halfHHoop) * 0.5) * safeH;
     const dyBallToHoopPx = Math.max(48, ballScreenY - hoopScreenY);
 
     return {
@@ -1816,58 +1925,67 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
       )}
 
       {/* Minimalist Architectural Score & 3-Lives HUD during Active Game */}
-      {(gamePhase === 'playing' || gamePhase === 'game_over') && (
-        <div className="pointer-events-none absolute inset-x-3 top-2 sm:inset-x-6 sm:top-4 z-20 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 rounded-full border border-alabaster/15 bg-obsidian/85 px-3 py-1 backdrop-blur-md">
-            <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-ink-subtle">
-              Score
-            </span>
-            <span className="font-mono text-xs font-semibold text-alabaster">
-              {String(score).padStart(2, '0')}
-            </span>
-            {streak >= 2 && (
-              <span className="rounded-full bg-sand/20 px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-sand-light">
-                ×{streak}
+      <AnimatePresence>
+        {(gamePhase === 'playing' || gamePhase === 'game_over') && (
+          <motion.div
+            key="court-hud"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
+            className="pointer-events-none absolute inset-x-3 top-2 sm:inset-x-6 sm:top-4 z-20 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-2.5 rounded-full border border-alabaster/15 bg-obsidian/85 px-3 py-1 backdrop-blur-md">
+              <span className="font-mono text-[9.5px] uppercase tracking-[0.18em] text-ink-subtle">
+                Score
               </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {/* 3 Lives Indicator */}
-            <div
-              className="flex items-center gap-1.5 rounded-full border border-alabaster/15 bg-obsidian/85 px-3 py-1.5 backdrop-blur-md"
-              aria-label={`${lives} lives remaining`}
-            >
-              {[0, 1, 2].map((idx) => {
-                const alive = idx < lives;
-                return (
-                  <span
-                    key={`life-${idx}`}
-                    className={`h-2 w-2 rounded-full transition-all duration-300 ${
-                      alive
-                        ? 'bg-sand shadow-[0_0_8px_rgba(229,199,123,0.8)] scale-100'
-                        : 'border border-alabaster/25 bg-transparent scale-90 opacity-40'
-                    }`}
-                  />
-                );
-              })}
+              <span className="font-mono text-xs font-semibold text-alabaster">
+                {String(score).padStart(2, '0')}
+              </span>
+              {streak >= 2 && (
+                <span className="rounded-full bg-sand/20 px-1.5 py-0.5 font-mono text-[8.5px] uppercase tracking-[0.14em] text-sand-light">
+                  ×{streak}
+                </span>
+              )}
             </div>
 
-            {/* Exit back to Globe */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleReturnToGlobe();
-              }}
-              className="pointer-events-auto rounded-full border border-alabaster/15 bg-obsidian/85 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-subtle transition-colors hover:border-sand/50 hover:text-alabaster backdrop-blur-md"
-              aria-label="Exit game and return to globe"
-            >
-              × Globe
-            </button>
-          </div>
-        </div>
-      )}
+            <div className="flex items-center gap-2">
+              {/* 3 Lives Indicator */}
+              <div
+                className="flex items-center gap-1.5 rounded-full border border-alabaster/15 bg-obsidian/85 px-3 py-1.5 backdrop-blur-md"
+                aria-label={`${lives} lives remaining`}
+              >
+                {[0, 1, 2].map((idx) => {
+                  const alive = idx < lives;
+                  return (
+                    <span
+                      key={`life-${idx}`}
+                      className={`h-2 w-2 rounded-full transition-all duration-300 ${
+                        alive
+                          ? 'bg-sand shadow-[0_0_8px_rgba(229,199,123,0.8)] scale-100'
+                          : 'border border-alabaster/25 bg-transparent scale-90 opacity-40'
+                      }`}
+                    />
+                  );
+                })}
+              </div>
+
+              {/* Exit back to Globe */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleReturnToGlobe();
+                }}
+                className="pointer-events-auto rounded-full border border-alabaster/15 bg-obsidian/85 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em] text-ink-subtle transition-colors hover:border-sand/50 hover:text-alabaster backdrop-blur-md"
+                aria-label="Exit game and return to globe"
+              >
+                × Globe
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Aesthetic Score / Miss Shot Telemetry Toast */}
       {shotEvent && (
@@ -1876,9 +1994,15 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
           className="pointer-events-none absolute left-1/2 top-12 sm:top-16 -translate-x-1/2 z-20 flex flex-col items-center animate-in fade-in zoom-in-95 duration-200"
         >
           <div
-            className={`rounded-full border px-3.5 py-1 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.5)] ${
+            className={`rounded-full border px-3.5 py-1 backdrop-blur-md ${
+              isLight
+                ? 'shadow-[0_4px_18px_rgba(0,0,0,0.08)]'
+                : 'shadow-[0_4px_20px_rgba(0,0,0,0.5)]'
+            } ${
               shotEvent.type === 'miss'
-                ? 'border-red-500/40 bg-obsidian/90 text-red-300'
+                ? isLight
+                  ? 'border-red-600/35 bg-obsidian/95 text-red-700'
+                  : 'border-red-500/40 bg-obsidian/90 text-red-300'
                 : 'border-sand/50 bg-obsidian/90 text-sand-light'
             }`}
           >
@@ -1892,7 +2016,11 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
       {/* Game Over Modal Overlay (When 3 Lives Are Spent) */}
       {gamePhase === 'game_over' && (
         <div className="absolute inset-0 z-30 flex items-center justify-center bg-void/65 backdrop-blur-sm p-4">
-          <div className="flex w-full max-w-[280px] flex-col items-center rounded-2xl border border-sand/30 bg-obsidian/95 p-5 text-center shadow-[0_16px_48px_rgba(0,0,0,0.75)]">
+          <div
+            className={`flex w-full max-w-[280px] flex-col items-center rounded-2xl border border-sand/30 bg-obsidian/95 p-5 text-center ${
+              isLight ? 'shadow-[0_16px_48px_rgba(0,0,0,0.12)]' : 'shadow-[0_16px_48px_rgba(0,0,0,0.75)]'
+            }`}
+          >
             <span className="font-mono text-[9px] uppercase tracking-[0.22em] text-sand-light">
               Court Session Complete
             </span>
@@ -1938,69 +2066,85 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
 
       {/* Bottom Floating Pill: "Tap to beam" -> "Spin fast to play" -> Court Controls Hint */}
       <div className="pointer-events-none absolute bottom-3 sm:bottom-4 left-1/2 -translate-x-1/2 z-20 flex items-center justify-center">
-        {isGlobeMode ? (
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleTrigger();
-            }}
-            className={`pointer-events-auto group flex items-center gap-2 rounded-full border px-3.5 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.65)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 ${
-              gamePhase === 'ready_to_spin'
-                ? fastSpinCount > 0
-                  ? 'border-sand bg-obsidian/95 ring-2 ring-sand/45'
-                  : 'border-sand bg-obsidian/95 ring-1 ring-sand/35'
-                : 'border-sand/35 bg-obsidian/90 hover:border-sand'
-            } ${tapPulsing ? 'border-sand bg-sand/25 scale-105 ring-2 ring-sand/40' : ''}`}
-            aria-label={
-              gamePhase === 'ready_to_spin'
-                ? `Spin the globe fast three times repeatedly to play basketball (${fastSpinCount} of 3)`
-                : 'Tap to shoot telemetry beam'
-            }
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sand opacity-80" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-sand" />
-            </span>
-            {gamePhase === 'ready_to_spin' ? (
-              <span className="flex items-center gap-2">
-                <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-sand-light font-medium whitespace-nowrap transition-colors group-hover:text-alabaster">
-                  Spin fast to play
-                </span>
-                <span className="flex items-center gap-1" aria-hidden="true">
-                  {[0, 1, 2].map((idx) => {
-                    const lit = idx < fastSpinCount;
-                    return (
-                      <span
-                        key={`spin-pip-${idx}`}
-                        className={`h-1.5 w-1.5 rounded-full transition-all duration-200 ${
-                          lit
-                            ? 'bg-sand scale-110 shadow-[0_0_6px_rgba(229,199,123,0.9)]'
-                            : 'border border-sand/45 bg-transparent opacity-60'
-                        }`}
-                      />
-                    );
-                  })}
-                </span>
+        <AnimatePresence mode="wait">
+          {isGlobeMode ? (
+            <motion.button
+              key="globe-pill"
+              type="button"
+              initial={{ opacity: 0, y: 6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.96 }}
+              transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleTrigger();
+              }}
+              className={`pointer-events-auto group flex items-center gap-2 rounded-full border px-3.5 py-1.5 backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 ${
+                isLight ? 'shadow-[0_4px_16px_rgba(0,0,0,0.08)]' : 'shadow-[0_4px_20px_rgba(0,0,0,0.65)]'
+              } ${
+                gamePhase === 'ready_to_spin'
+                  ? fastSpinCount > 0
+                    ? 'border-sand bg-obsidian/95 ring-2 ring-sand/45'
+                    : 'border-sand bg-obsidian/95 ring-1 ring-sand/35'
+                  : 'border-sand/35 bg-obsidian/90 hover:border-sand'
+              } ${tapPulsing ? 'border-sand bg-sand/25 scale-105 ring-2 ring-sand/40' : ''}`}
+              aria-label={
+                gamePhase === 'ready_to_spin'
+                  ? `Spin the globe fast three times repeatedly to play basketball (${fastSpinCount} of 3)`
+                  : 'Tap to shoot telemetry beam'
+              }
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-sand opacity-80" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-sand" />
               </span>
-            ) : (
-              <>
-                <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-sand-light font-medium transition-colors group-hover:text-alabaster">
-                  Tap
+              {gamePhase === 'ready_to_spin' ? (
+                <span className="flex items-center gap-2">
+                  <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-sand-light font-medium whitespace-nowrap transition-colors group-hover:text-alabaster">
+                    Spin fast to play
+                  </span>
+                  <span className="flex items-center gap-1" aria-hidden="true">
+                    {[0, 1, 2].map((idx) => {
+                      const lit = idx < fastSpinCount;
+                      return (
+                        <span
+                          key={`spin-pip-${idx}`}
+                          className={`h-1.5 w-1.5 rounded-full transition-all duration-200 ${
+                            lit
+                              ? 'bg-sand scale-110 shadow-[0_0_6px_rgba(229,199,123,0.9)]'
+                              : 'border border-sand/45 bg-transparent opacity-60'
+                          }`}
+                        />
+                      );
+                    })}
+                  </span>
                 </span>
-                <span className="font-mono text-[9px] text-ink-subtle">
-                  to beam
-                </span>
-              </>
-            )}
-          </button>
-        ) : gamePhase === 'playing' ? (
-          <div className="rounded-full border border-alabaster/10 bg-obsidian/80 px-3 py-1 backdrop-blur-md">
-            <span className="font-mono text-[8.5px] sm:text-[9px] uppercase tracking-[0.16em] text-ink-subtle whitespace-nowrap">
-              Drag ← → to Aim · Swipe ↑ to Shoot
-            </span>
-          </div>
-        ) : null}
+              ) : (
+                <>
+                  <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-sand-light font-medium transition-colors group-hover:text-alabaster">
+                    Tap
+                  </span>
+                  <span className="font-mono text-[9px] text-ink-subtle">
+                    to beam
+                  </span>
+                </>
+              )}
+            </motion.button>
+          ) : gamePhase === 'playing' ? (
+            <motion.div
+              key="court-pill"
+              initial={{ opacity: 0, y: 6, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.96 }}
+              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              className="rounded-full border border-alabaster/10 bg-obsidian/80 px-3 py-1 backdrop-blur-md"
+            >
+              <span className="font-mono text-[8.5px] sm:text-[9px] uppercase tracking-[0.16em] text-ink-subtle whitespace-nowrap">
+                Drag ← → to Aim · Swipe ↑ to Shoot
+              </span>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
     </div>
   );

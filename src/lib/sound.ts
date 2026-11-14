@@ -672,6 +672,104 @@ class LeicaSoundEngine {
     } catch {}
   }
 
+  /**
+   * 11. Gilded Shell Tap & Progressive Fracture Sound (Stages 1-4)
+   */
+  public playEggTapCrack(stage: number) {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const clampedStage = Math.min(4, Math.max(1, stage));
+
+      // Mineral shell impact resonance
+      const bodyOsc = this.ctx.createOscillator();
+      const bodyGain = this.ctx.createGain();
+      bodyOsc.type = 'triangle';
+      bodyOsc.frequency.setValueAtTime(380 + clampedStage * 55, now);
+      bodyOsc.frequency.exponentialRampToValueAtTime(165, now + 0.045);
+      bodyGain.gain.setValueAtTime(0.052, now);
+      bodyGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.048);
+      bodyOsc.connect(bodyGain);
+      bodyGain.connect(this.destination);
+      bodyOsc.start(now);
+      bodyOsc.stop(now + 0.05);
+
+      // Sharp crystalline fracture snap (escalates in brittle micro-splinters)
+      const bursts = clampedStage >= 3 ? 2 : 1;
+      for (let b = 0; b < bursts; b++) {
+        const offset = b * 0.018;
+        const noise = this.createNoiseBuffer(0.022);
+        if (!noise) continue;
+        const src = this.ctx.createBufferSource();
+        src.buffer = noise;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(2400 + clampedStage * 420 + b * 600, now + offset);
+        filter.Q.value = 3.2;
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.058 + clampedStage * 0.008, now + offset);
+        nGain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.022);
+        src.connect(filter);
+        filter.connect(nGain);
+        nGain.connect(this.destination);
+        src.start(now + offset);
+      }
+    } catch {}
+  }
+
+  /**
+   * 12. Specimen Egg Split & Golden Resonance Bloom (Stage 5)
+   */
+  public playEggHatch() {
+    if (!this.enabled) return;
+    this.initCtx();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+
+      // Cascading crystalline shell shatter
+      [0, 0.022, 0.048].forEach((offset, i) => {
+        if (!this.ctx) return;
+        const noise = this.createNoiseBuffer(0.032);
+        if (!noise) return;
+        const src = this.ctx.createBufferSource();
+        src.buffer = noise;
+        const filter = this.ctx.createBiquadFilter();
+        filter.type = 'bandpass';
+        filter.frequency.setValueAtTime(2800 + i * 750, now + offset);
+        filter.Q.value = 2.4;
+        const nGain = this.ctx.createGain();
+        nGain.gain.setValueAtTime(0.07 - i * 0.014, now + offset);
+        nGain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.032);
+        src.connect(filter);
+        filter.connect(nGain);
+        nGain.connect(this.destination);
+        src.start(now + offset);
+      });
+
+      // Quiet-luxury golden harmonic shimmer
+      const shimmerFreqs = [349.23, 523.25, 659.25, 880.0];
+      shimmerFreqs.forEach((freq, idx) => {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const g = this.ctx.createGain();
+        osc.type = 'sine';
+        const start = now + 0.03 + idx * 0.04;
+        osc.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0.028, start);
+        g.gain.exponentialRampToValueAtTime(0.0001, start + 0.65);
+        osc.connect(g);
+        g.connect(this.destination);
+        osc.start(start);
+        osc.stop(start + 0.66);
+      });
+    } catch {}
+  }
+
   // Aliases for backward compatibility
   public playClick() {
     this.playLeicaShutter();

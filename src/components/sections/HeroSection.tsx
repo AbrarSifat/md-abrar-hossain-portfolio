@@ -108,7 +108,7 @@ export const HeroSection: React.FC = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, delay: 0.3 }}
-          className="relative z-10 h-[260px] w-full sm:h-[440px] lg:col-span-5 lg:h-[620px]"
+          className="relative z-10 h-[430px] w-full sm:h-[440px] lg:col-span-5 lg:h-[620px]"
         >
           <div className="absolute inset-y-0 inset-x-0 lg:-inset-x-12 xl:-inset-x-16">
             <WebGLErrorBoundary>
