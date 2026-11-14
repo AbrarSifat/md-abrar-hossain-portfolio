@@ -283,7 +283,7 @@ function MinimalistSculpture({
 
       // 3.93 radians (~225 deg) brings London, Dubai, and Chattogram facing directly forward!
       const idleSpeed =
-        gamePhase === 'ready_to_spin' ? (fastSpinCount === 1 ? 0.42 : 0.22) : 0.08;
+        gamePhase === 'ready_to_spin' ? 0.22 + fastSpinCount * 0.14 : 0.08;
       const targetY =
         3.93 + extraRotYRef.current + Math.sin(t * idleSpeed) * 0.22 + pointer.x * 0.25;
       const targetX = 0.22 + pointer.y * 0.14;
@@ -1287,7 +1287,7 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
     };
   }, []);
 
-  // Expire first fast spin if user does not repeat a second fast spin within 2.8s
+  // Expire registered fast spins if user does not complete 3 fast spins within 2.2s
   useEffect(() => {
     if (gamePhase !== 'ready_to_spin') {
       globeSpinRef.current.fastSpinCount = 0;
@@ -1295,13 +1295,13 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
       if (fastSpinCount !== 0) setFastSpinCount(0);
       return;
     }
-    if (fastSpinCount !== 1) return;
+    if (fastSpinCount <= 0 || fastSpinCount >= 3) return;
 
     const timer = setTimeout(() => {
       globeSpinRef.current.fastSpinCount = 0;
       globeSpinRef.current.lastFastSpinAt = 0;
       setFastSpinCount(0);
-    }, 2800);
+    }, 2200);
     return () => clearTimeout(timer);
   }, [gamePhase, fastSpinCount]);
 
@@ -1333,8 +1333,8 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
 
   const registerFastSpin = (dirX: number, dirY: number, now: number) => {
     const tracker = globeSpinRef.current;
-    if (tracker.lastFastSpinAt > 0 && now - tracker.lastFastSpinAt < 100) return;
-    if (tracker.lastFastSpinAt > 0 && now - tracker.lastFastSpinAt > 2800) {
+    if (tracker.lastFastSpinAt > 0 && now - tracker.lastFastSpinAt < 140) return;
+    if (tracker.lastFastSpinAt > 0 && now - tracker.lastFastSpinAt > 2200) {
       tracker.fastSpinCount = 0;
     }
 
@@ -1348,11 +1348,11 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
     const kickDir = Math.abs(dirX) >= Math.abs(dirY) ? (dirX >= 0 ? 1 : -1) : dirY >= 0 ? 1 : -1;
     spinKickRef.current += kickDir * 14;
 
-    if (nextCount >= 2) {
+    if (nextCount >= 3) {
       startSpinTransition();
     } else {
       sounds.playApertureClick();
-      setFastSpinCount(1);
+      setFastSpinCount(nextCount);
     }
   };
 
@@ -1374,8 +1374,9 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
   const handleGlobePointerDown = (e: React.PointerEvent) => {
     const now = performance.now();
     const tracker = globeSpinRef.current;
-    if (tracker.lastFastSpinAt > 0 && now - tracker.lastFastSpinAt > 2800) {
+    if (tracker.lastFastSpinAt > 0 && now - tracker.lastFastSpinAt > 2200) {
       resetGlobeTracker();
+      if (fastSpinCount !== 0) setFastSpinCount(0);
     }
     tracker.active = true;
     tracker.pointerId = e.pointerId;
@@ -1395,7 +1396,7 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
 
     const now = performance.now();
     tracker.samples.push({ x: e.clientX, y: e.clientY, t: now });
-    while (tracker.samples.length > 2 && now - tracker.samples[0].t > 240) {
+    while (tracker.samples.length > 2 && now - tracker.samples[0].t > 150) {
       tracker.samples.shift();
     }
 
@@ -1405,19 +1406,20 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
     const dy = e.clientY - anchor.y;
     const dist = Math.hypot(dx, dy);
 
-    if (dist < 44 || dt < 6) return;
-    const speed = dist / dt; // px per ms (>= 0.40 desktop / >= 0.34 compact touch is a fast spin)
-    const minSpeed = isGlobeOnlyTouch ? 0.34 : 0.4;
+    const minDist = isGlobeOnlyTouch ? 64 : 88;
+    if (dist < minDist || dt < 8) return;
+    const speed = dist / dt; // px per ms (>= 0.92 desktop / >= 0.68 compact touch requires a really fast spin)
+    const minSpeed = isGlobeOnlyTouch ? 0.68 : 0.92;
     if (speed < minSpeed) return;
 
     const dirX = dx / dist;
     const dirY = dy / dist;
 
-    // Prevent counting a single long swipe twice; allow a second count only on a clear reversal after cooldown
+    // Prevent counting a single long swipe twice; allow a reversal count only after cooldown and sharp (>120 deg) turn
     if (tracker.strokeRegisteredAt > 0) {
-      if (now - tracker.strokeRegisteredAt < 200) return;
+      if (now - tracker.strokeRegisteredAt < 260) return;
       const dot = dirX * tracker.strokeDirX + dirY * tracker.strokeDirY;
-      if (dot > -0.35) return;
+      if (dot > -0.5) return;
     }
 
     registerFastSpin(dirX, dirY, now);
@@ -1435,13 +1437,14 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
     const totalDt = now - tracker.startTime;
 
     // Catch short explosive flicks coalesced right before release
-    const minReleaseSpeed = isGlobeOnlyTouch ? 0.3 : 0.35;
+    const minReleaseDist = isGlobeOnlyTouch ? 64 : 88;
+    const minReleaseSpeed = isGlobeOnlyTouch ? 0.62 : 0.85;
     if (
       gamePhase === 'ready_to_spin' &&
       tracker.strokeRegisteredAt === 0 &&
-      totalDist >= 46 &&
+      totalDist >= minReleaseDist &&
       totalDt > 0 &&
-      totalDt <= 420 &&
+      totalDt <= 280 &&
       totalDist / totalDt >= minReleaseSpeed
     ) {
       registerFastSpin(totalDx / totalDist, totalDy / totalDist, now);
@@ -1944,14 +1947,14 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
             }}
             className={`pointer-events-auto group flex items-center gap-2 rounded-full border px-3.5 py-1.5 shadow-[0_4px_20px_rgba(0,0,0,0.65)] backdrop-blur-md transition-all duration-300 hover:scale-105 active:scale-95 ${
               gamePhase === 'ready_to_spin'
-                ? fastSpinCount === 1
+                ? fastSpinCount > 0
                   ? 'border-sand bg-obsidian/95 ring-2 ring-sand/45'
                   : 'border-sand bg-obsidian/95 ring-1 ring-sand/35'
                 : 'border-sand/35 bg-obsidian/90 hover:border-sand'
             } ${tapPulsing ? 'border-sand bg-sand/25 scale-105 ring-2 ring-sand/40' : ''}`}
             aria-label={
               gamePhase === 'ready_to_spin'
-                ? `Spin the globe fast two times repeatedly to play basketball (${fastSpinCount} of 2)`
+                ? `Spin the globe fast three times repeatedly to play basketball (${fastSpinCount} of 3)`
                 : 'Tap to shoot telemetry beam'
             }
           >
@@ -1965,7 +1968,7 @@ export const CorridorScene: React.FC<{ modeOverride?: ThemeMode }> = ({ modeOver
                   Spin fast to play
                 </span>
                 <span className="flex items-center gap-1" aria-hidden="true">
-                  {[0, 1].map((idx) => {
+                  {[0, 1, 2].map((idx) => {
                     const lit = idx < fastSpinCount;
                     return (
                       <span
